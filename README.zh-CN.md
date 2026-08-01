@@ -23,7 +23,7 @@ InstallerMarker 是一个安全的第一阶段分析工具，用于将开源 Git
 通过当前 GitHub Release 安装：
 
 ```bash
-npm install --global https://github.com/lawushanshan/installermarker/releases/download/v0.2.5/installermarker-0.2.5.tgz
+npm install --global https://github.com/lawushanshan/installermarker/releases/download/v0.2.6/installermarker-0.2.6.tgz
 ```
 
 可使用 `installermarker --version` 查看当前安装的 CLI 版本。启用 npm 发布后，也可以使用 `npx installermarker` 运行相同命令。
@@ -31,12 +31,12 @@ npm install --global https://github.com/lawushanshan/installermarker/releases/do
 需要下载到本地后再安装时，可先验证 Release 附带的 SHA-256 校验文件：
 
 ```bash
-curl -LO https://github.com/lawushanshan/installermarker/releases/download/v0.2.5/installermarker-0.2.5.tgz
-curl -LO https://github.com/lawushanshan/installermarker/releases/download/v0.2.5/installermarker-0.2.5.tgz.sha256
-sha256sum -c installermarker-0.2.5.tgz.sha256 # Linux
-shasum -a 256 -c installermarker-0.2.5.tgz.sha256 # macOS
-gh attestation verify ./installermarker-0.2.5.tgz --repo lawushanshan/installermarker
-npm install --global ./installermarker-0.2.5.tgz
+curl -LO https://github.com/lawushanshan/installermarker/releases/download/v0.2.6/installermarker-0.2.6.tgz
+curl -LO https://github.com/lawushanshan/installermarker/releases/download/v0.2.6/installermarker-0.2.6.tgz.sha256
+sha256sum -c installermarker-0.2.6.tgz.sha256 # Linux
+shasum -a 256 -c installermarker-0.2.6.tgz.sha256 # macOS
+gh attestation verify ./installermarker-0.2.6.tgz --repo lawushanshan/installermarker
+npm install --global ./installermarker-0.2.6.tgz
 ```
 
 ```bash
@@ -94,6 +94,8 @@ git push -u origin main
 已发布包的 `repository`、`bugs` 和 `homepage` 元数据指向本 GitHub 仓库；若仓库发生迁移，请同步更新这些字段。
 
 建议为 `main` 开启分支保护：要求 CI 通过、要求 Pull Request 审核、禁止强制推送。GitHub Actions 应保持最小权限，并为发布凭据设置受保护的 environment。
+
+仓库中的 [OpenSSF Scorecard 工作流](.github/workflows/scorecard.yml) 会检查供应链安全实践，在 `main` 推送时和每周定期运行，将 SARIF 结果上传到 Code Scanning，并保留短期 SARIF Artifact 供审核。
 
 ## 范围与路线图
 
