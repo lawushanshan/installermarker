@@ -27,7 +27,7 @@ test("source-build workflow protects execution with an environment and native ta
 });
 
 test("all third-party workflow actions are pinned to immutable commits", async () => {
-  const files = ["ci.yml", "materialize.yml", "build.yml", "release.yml", "scorecard.yml"];
+  const files = ["ci.yml", "materialize.yml", "build.yml", "release.yml", "scorecard.yml", "codeql.yml"];
   for (const file of files) {
     const workflow = await readFile(new URL(`../.github/workflows/${file}`, import.meta.url), "utf8");
     const actions = [...workflow.matchAll(/^\s*(?:-\s+)?uses:\s+[^@\s]+@([^\s#]+)/gm)];
@@ -39,12 +39,14 @@ test("all third-party workflow actions are pinned to immutable commits", async (
 });
 
 test("workflow files parse as YAML and publish npm provenance", async () => {
-  const files = ["ci.yml", "materialize.yml", "build.yml", "release.yml", "scorecard.yml"];
+  const files = ["ci.yml", "materialize.yml", "build.yml", "release.yml", "scorecard.yml", "codeql.yml"];
   for (const file of files) {
     const workflow = await readFile(new URL(`../.github/workflows/${file}`, import.meta.url), "utf8");
     assert.equal(parseDocument(workflow, { uniqueKeys: true }).errors.length, 0, `${file} is not valid YAML`);
   }
   const release = await readFile(new URL("../.github/workflows/release.yml", import.meta.url), "utf8");
+  assert.match(release, /permissions:\n  contents: read/);
+  assert.match(release, /jobs:\n  release:[\s\S]*?permissions:\n      contents: write/);
   assert.match(release, /package_version="\$\(node -p "require\('\.\/package\.json'\)\.version"\)/);
   assert.match(release, /attestations: write/);
   assert.match(release, /actions\/attest@508db95dd578ae2727ebd6217d5ba78e4fbda05d # v4\.2\.1/);
@@ -70,5 +72,15 @@ test("scorecard workflow keeps scanning permissions narrow and credentials ephem
   assert.match(workflow, /persist-credentials: false/);
   assert.match(workflow, /publish_results: true/);
   assert.match(workflow, /results_format: sarif/);
+  assert.doesNotMatch(workflow, /secrets\./);
+});
+
+test("codeql workflow analyzes JavaScript with read-only checkout", async () => {
+  const workflow = await readFile(new URL("../.github/workflows/codeql.yml", import.meta.url), "utf8");
+  assert.match(workflow, /languages: javascript-typescript/);
+  assert.match(workflow, /security-events: write/);
+  assert.match(workflow, /persist-credentials: false/);
+  assert.match(workflow, /github\/codeql-action\/init@f205ea1c3313d32999d8d6a48b4f6530d4437b38/);
+  assert.match(workflow, /github\/codeql-action\/analyze@f205ea1c3313d32999d8d6a48b4f6530d4437b38/);
   assert.doesNotMatch(workflow, /secrets\./);
 });

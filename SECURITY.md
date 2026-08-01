@@ -16,4 +16,4 @@ The source-build workflow runs explicitly reviewed repository code. It uses a pr
 
 ## Reporting a vulnerability
 
-Do not open a public issue for a suspected vulnerability. Report it privately to the repository security contact once configured. Until then, use GitHub's private vulnerability reporting feature on the repository.
+Do not open a public issue for a suspected vulnerability. Use [GitHub's private vulnerability reporting form](https://github.com/lawushanshan/installermarker/security/advisories/new) instead.
