@@ -2,6 +2,11 @@
 
 All notable changes to InstallerMarker are documented here. Versions follow Semantic Versioning.
 
+## 0.2.3 - 2026-08-01
+
+- Updated pinned GitHub Actions to the current Node 24-based major versions.
+- Enabled Dependabot vulnerability alerts for the public repository.
+
 ## 0.2.2 - 2026-08-01
 
 - Replaced the deprecated Node 20-based release action with the GitHub CLI available on hosted runners.
