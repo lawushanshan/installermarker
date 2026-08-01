@@ -10,7 +10,7 @@ function targetRecipe(target, project) {
           ? "build-electron"
         : project.kind === "tauri" && target.status === "likely"
           ? "build-tauri"
-        : ["go", "rust"].includes(project.kind) && target.status === "likely"
+        : ["go", "rust", "python"].includes(project.kind) && target.status === "likely"
           ? "build-native"
         : "TODO: select packager"
   };

@@ -87,8 +87,8 @@ test("rejects duplicate platforms before a worker can overwrite staging output",
   assert.equal(result.errors.some((item) => item.code === "duplicate-platform"), true);
 });
 
-test("allows reviewed Go and Rust native installer build plans", () => {
-  for (const strategy of ["go-native", "rust-native"]) {
+test("allows reviewed Go, Rust, and Python native installer build plans", () => {
+  for (const strategy of ["go-native", "rust-native", "python-native"]) {
     const recipe = validRecipe({
       build: { strategy, command: "reviewed-native-packager", artifactDirectories: ["packages"] },
       targets: [{ platform: "linux-x64", status: "likely", packaging: "build-native" }]
