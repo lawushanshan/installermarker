@@ -48,7 +48,9 @@ test("workflow files parse as YAML and publish npm provenance", async () => {
   assert.match(release, /package_version="\$\(node -p "require\('\.\/package\.json'\)\.version"\)/);
   assert.match(release, /artifacts=\(installermarker-\*\.tgz\)/);
   assert.match(release, /test "\$\{#artifacts\[@\]\}" -eq 1/);
-  assert.match(release, /gh release create "\$GITHUB_REF_NAME" "\$\{artifacts\[0\]\}"/);
+  assert.match(release, /checksum="\$\{artifacts\[0\]\}\.sha256"/);
+  assert.match(release, /sha256sum "\$\{artifacts\[0\]\}" > "\$checksum"/);
+  assert.match(release, /gh release create "\$GITHUB_REF_NAME" "\$\{artifacts\[0\]\}" "\$checksum"/);
   assert.match(release, /GH_TOKEN: \$\{\{ github\.token \}\}/);
   assert.doesNotMatch(release, /softprops\/action-gh-release/);
   assert.match(release, /id-token: write/);

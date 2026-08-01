@@ -23,10 +23,20 @@ InstallerMarker 是一个安全的第一阶段分析工具，用于将开源 Git
 通过当前 GitHub Release 安装：
 
 ```bash
-npm install --global https://github.com/lawushanshan/installermarker/releases/download/v0.2.3/installermarker-0.2.3.tgz
+npm install --global https://github.com/lawushanshan/installermarker/releases/download/v0.2.4/installermarker-0.2.4.tgz
 ```
 
 可使用 `installermarker --version` 查看当前安装的 CLI 版本。启用 npm 发布后，也可以使用 `npx installermarker` 运行相同命令。
+
+需要下载到本地后再安装时，可先验证 Release 附带的 SHA-256 校验文件：
+
+```bash
+curl -LO https://github.com/lawushanshan/installermarker/releases/download/v0.2.4/installermarker-0.2.4.tgz
+curl -LO https://github.com/lawushanshan/installermarker/releases/download/v0.2.4/installermarker-0.2.4.tgz.sha256
+sha256sum -c installermarker-0.2.4.tgz.sha256 # Linux
+shasum -a 256 -c installermarker-0.2.4.tgz.sha256 # macOS
+npm install --global ./installermarker-0.2.4.tgz
+```
 
 ```bash
 installermarker https://github.com/owner/repository
