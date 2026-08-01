@@ -32,7 +32,9 @@ jobs:
           shopt -s nullglob
           artifacts=(installermarker-*.tgz)
           test "${#artifacts[@]}" -eq 1
-          gh release create "$GITHUB_REF_NAME" "${artifacts[0]}" \
+          checksum="${artifacts[0]}.sha256"
+          sha256sum "${artifacts[0]}" > "$checksum"
+          gh release create "$GITHUB_REF_NAME" "${artifacts[0]}" "$checksum" \
             --generate-notes \
             --title "$GITHUB_REF_NAME"
         env:
