@@ -10,6 +10,8 @@ The current materialization worker does not execute or install artifacts. It acc
 
 The repository-owned GitHub Actions materialization workflow uses `contents: read`, does not persist checkout credentials, and takes its recipe only from the checked-out control repository. Protect recipe changes and workflow dispatch permissions accordingly.
 
+The Scorecard workflow runs with read-only repository access plus only the `security-events` and OIDC permissions needed to publish SARIF findings and Scorecard results. It disables checkout credential persistence and does not receive repository secrets.
+
 The source-build workflow runs explicitly reviewed repository code. It uses a protected environment, ephemeral hosted runners, `contents: read`, disabled checkout credential persistence, an isolated home, and a reduced environment passed to the target command. It does not make source builds safe for arbitrary unreviewed code; do not attach signing credentials, deployment tokens, or production secrets to the `source-build` environment.
 
 ## Reporting a vulnerability
