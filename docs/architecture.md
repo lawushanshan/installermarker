@@ -7,7 +7,7 @@ GitHub URL -> read-only inspection -> assessment + recipe -> reviewed build requ
                                                     -> isolated target workers -> signing -> release
 ```
 
-The current CLI implements read-only discovery, pinned recipes, a restricted materialization worker for existing installers, and source-build workers for Electron, Tauri, and reviewer-configured Go/Rust native packaging. Discovery resolves the default branch to an immutable commit, then uses the GitHub REST API to retrieve the pinned tree, an allowlist of root-level manifests, and the latest release. Materialization can download digest-pinned installers from that repository's public GitHub Releases, but no artifact or target-repository instruction is executed as a command.
+The current CLI implements read-only discovery, pinned recipes, a restricted materialization worker for existing installers, and source-build workers for Electron, Tauri, and reviewer-configured Go/Rust/Python native packaging. Discovery resolves the default branch to an immutable commit, then uses the GitHub REST API to retrieve the pinned tree, an allowlist of root-level manifests, and the latest release. Materialization can download digest-pinned installers from that repository's public GitHub Releases, but no artifact or target-repository instruction is executed as a command.
 
 ## Recipe contract
 
@@ -15,7 +15,7 @@ A recipe is generated as JSON or YAML and is intended to be committed alongside 
 
 Future workers must require a reviewed recipe and verify its pinned commit and input digests. They should build each target in an ephemeral environment, capture build provenance and an SBOM, execute install/uninstall smoke tests, and submit only final artifacts to a separately protected signing service.
 
-The source-build worker is an explicit exception to the no-execution rule: it requires a reviewed command and an acknowledgement flag, verifies the native host target, clones the public source at its pinned commit, runs with an isolated home and no inherited credential variables, and collects only platform-compatible installer files from reviewed directories. Electron/Tauri commands may be suggested; Go/Rust native packaging commands must be selected by the reviewer. Hosted GitHub Actions runs belong behind the protected `source-build` environment.
+The source-build worker is an explicit exception to the no-execution rule: it requires a reviewed command and an acknowledgement flag, verifies the native host target, clones the public source at its pinned commit, runs with an isolated home and no inherited credential variables, and collects only platform-compatible installer files from reviewed directories. Electron/Tauri commands may be suggested; Go/Rust/Python native packaging commands must be selected by the reviewer. Hosted GitHub Actions runs belong behind the protected `source-build` environment.
 
 The materialization worker is intentionally narrower. It validates source ownership, platform-specific installer extensions, declared size, a one-GiB per-file limit, HTTPS redirect ownership, and SHA-256. Downloads remain in a random staging directory until every selected artifact passes verification. It refuses output collisions and emits `artifacts.json`, described by `schema/artifact-manifest.schema.json`.
 

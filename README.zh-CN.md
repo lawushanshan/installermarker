@@ -23,7 +23,7 @@ InstallerMarker 是一个安全的第一阶段分析工具，用于将开源 Git
 通过当前 GitHub Release 安装：
 
 ```bash
-npm install --global https://github.com/lawushanshan/installermarker/releases/download/v0.2.7/installermarker-0.2.7.tgz
+npm install --global https://github.com/lawushanshan/installermarker/releases/download/v0.2.8/installermarker-0.2.8.tgz
 ```
 
 可使用 `installermarker --version` 查看当前安装的 CLI 版本。启用 npm 发布后，也可以使用 `npx installermarker` 运行相同命令。
@@ -31,12 +31,12 @@ npm install --global https://github.com/lawushanshan/installermarker/releases/do
 需要下载到本地后再安装时，可先验证 Release 附带的 SHA-256 校验文件：
 
 ```bash
-curl -LO https://github.com/lawushanshan/installermarker/releases/download/v0.2.7/installermarker-0.2.7.tgz
-curl -LO https://github.com/lawushanshan/installermarker/releases/download/v0.2.7/installermarker-0.2.7.tgz.sha256
-sha256sum -c installermarker-0.2.7.tgz.sha256 # Linux
-shasum -a 256 -c installermarker-0.2.7.tgz.sha256 # macOS
-gh attestation verify ./installermarker-0.2.7.tgz --repo lawushanshan/installermarker
-npm install --global ./installermarker-0.2.7.tgz
+curl -LO https://github.com/lawushanshan/installermarker/releases/download/v0.2.8/installermarker-0.2.8.tgz
+curl -LO https://github.com/lawushanshan/installermarker/releases/download/v0.2.8/installermarker-0.2.8.tgz.sha256
+sha256sum -c installermarker-0.2.8.tgz.sha256 # Linux
+shasum -a 256 -c installermarker-0.2.8.tgz.sha256 # macOS
+gh attestation verify ./installermarker-0.2.8.tgz --repo lawushanshan/installermarker
+npm install --global ./installermarker-0.2.8.tgz
 ```
 
 ```bash
@@ -78,7 +78,7 @@ GITHUB_TOKEN=github_pat_xxx installermarker https://github.com/owner/repository 
 
 使用 `verify <产物目录>` 可离线重新检查已有的 `artifacts.json` 或 `build-artifacts.json` 目录。它会验证清单格式、文件名、字节大小和 SHA-256，不会执行任何安装包。
 
-对于尚未发布安装包的 Electron 和 Tauri 项目，请审核生成的源码构建配方、填写经过审核的 `build.command`，然后分别在原生目标系统上构建。Go 和 Rust 项目会生成 `build-native` 目标：需先选择并审核原生打包命令与产物目录。Worker 只接受 Windows `.msi/.exe`、macOS `.dmg/.pkg` 和 Linux `.AppImage/.deb/.rpm` 包，详见[源码构建说明](docs/source-build.zh-CN.md)。
+对于尚未发布安装包的 Electron 和 Tauri 项目，请审核生成的源码构建配方、填写经过审核的 `build.command`，然后分别在原生目标系统上构建。Go、Rust 和 Python 项目会生成 `build-native` 目标：需先选择并审核原生打包命令与产物目录。Python 默认使用 `dist` 和 `build` 作为候选目录，但入口和打包器仍必须人工确认。Worker 只接受 Windows `.msi/.exe`、macOS `.dmg/.pkg` 和 Linux `.AppImage/.deb/.rpm` 包，详见[源码构建说明](docs/source-build.zh-CN.md)。
 
 ## 项目发布与维护
 
@@ -99,7 +99,7 @@ git push -u origin main
 
 ## 范围与路线图
 
-0.2 版本包含静态分析、固定 commit 的配方生成、已有安装包的校验落盘，以及经过审核的 Electron/Tauri、Go、Rust 源码构建路径。下一阶段将为 Go/Rust 增加约定式打包适配器，并覆盖 Python 等项目类型，同时加入 SBOM、恶意软件与依赖扫描、安装/卸载冒烟测试，以及与不可信构建环境隔离的签名服务。
+0.2 版本包含静态分析、固定 commit 的配方生成、已有安装包的校验落盘，以及经过审核的 Electron/Tauri、Go、Rust、Python 源码构建路径。下一阶段将增加约定式打包适配器、SBOM、恶意软件与依赖扫描、安装/卸载冒烟测试，以及与不可信构建环境隔离的签名服务。
 
 Windows Authenticode 证书，以及 macOS Developer ID 和公证凭据，绝不能暴露给仓库的构建脚本。
 

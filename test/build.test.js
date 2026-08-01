@@ -152,6 +152,8 @@ test("build worker executes a reviewed native packaging recipe", async () => {
     });
     assert.equal(manifest.build.strategy, "go-native");
     assert.equal(manifest.artifacts[0].name, "widget.deb");
+    const schema = JSON.parse(await readFile(new URL("../schema/build-artifact-manifest.schema.json", import.meta.url), "utf8"));
+    assert.equal(new Ajv2020({ strict: true }).compile(schema)(manifest), true);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

@@ -15,7 +15,7 @@ const BUILD_PACKAGING = {
   "build-tauri": "tauri",
   "build-native": null
 };
-const NATIVE_BUILD_STRATEGIES = new Set(["go-native", "rust-native"]);
+const NATIVE_BUILD_STRATEGIES = new Set(["go-native", "rust-native", "python-native"]);
 
 const schema = JSON.parse(readFileSync(new URL("../schema/installermarker.schema.json", import.meta.url), "utf8"));
 const ajv = new Ajv2020({ allErrors: true, strict: true });

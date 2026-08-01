@@ -68,7 +68,12 @@ export function detectProject(files) {
   if (paths.has("go.mod")) return { kind: "go", strategy: "go-native", evidence: "go.mod found" };
   if (paths.has("Cargo.toml")) return { kind: "rust", strategy: "rust-native", evidence: "Cargo.toml found" };
   if (paths.has("pyproject.toml") || paths.has("requirements.txt") || paths.has("setup.py")) {
-    return { kind: "python", strategy: "python-bundle", evidence: "Python project manifest found" };
+    return {
+      kind: "python",
+      strategy: "python-native",
+      evidence: "Python project manifest found",
+      artifactDirectories: ["dist", "build"]
+    };
   }
   if (paths.has("pom.xml") || paths.has("build.gradle") || paths.has("build.gradle.kts")) {
     return { kind: "java", strategy: "java-runtime", evidence: "Java build manifest found" };
@@ -102,7 +107,7 @@ export function classifyTargets(releaseAssets, project) {
         assets: matchingAssets
       };
     }
-    if (["go", "rust", "electron", "tauri"].includes(project.kind)) {
+    if (["go", "rust", "electron", "tauri", "python"].includes(project.kind)) {
       return { ...identity, status: "likely", artifact: null, reason: `${project.kind} commonly supports native cross-platform builds`, selectedAsset: null, assets: [] };
     }
     if (project.kind === "container") {

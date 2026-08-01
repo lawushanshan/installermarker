@@ -58,12 +58,12 @@ test("creates source-build targets for detected Electron projects", () => {
   assert.equal(recipe.build.suggestedCommand, "npm ci && npm run dist");
 });
 
-test("creates native-build targets for detected Go and Rust projects", () => {
-  for (const kind of ["go", "rust"]) {
+test("creates native-build targets for detected Go, Rust, and Python projects", () => {
+  for (const kind of ["go", "rust", "python"]) {
     const report = {
       source: { url: "https://github.com/acme/widget", defaultBranch: "main", commitSha: "a".repeat(40) },
       application: { name: "widget" },
-      analysis: { project: { kind, strategy: `${kind}-native` } },
+      analysis: { project: { kind, strategy: `${kind}-native`, ...(kind === "python" ? { artifactDirectories: ["dist", "build"] } : {}) } },
       targets: [{ id: "linux-x64", status: "likely", artifact: null }]
     };
     assert.equal(createRecipe(report).targets[0].packaging, "build-native");

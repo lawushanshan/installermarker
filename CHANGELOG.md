@@ -2,6 +2,12 @@
 
 All notable changes to InstallerMarker are documented here. Versions follow Semantic Versioning.
 
+## 0.2.8 - 2026-08-01
+
+- Added a reviewed `python-native` source-build strategy for Python projects detected from standard manifests.
+- Added default Python artifact directories (`dist` and `build`) while keeping the entrypoint and packaging command explicit review items.
+- Extended source-build artifact manifest validation to Go, Rust, and Python native strategies.
+
 ## 0.2.7 - 2026-08-01
 
 - Added a pinned CodeQL workflow for JavaScript and TypeScript SAST analysis.

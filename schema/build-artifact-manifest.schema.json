@@ -22,7 +22,7 @@
       "additionalProperties": false,
       "required": ["strategy", "command", "platform"],
       "properties": {
-        "strategy": { "enum": ["electron", "tauri"] },
+        "strategy": { "enum": ["electron", "tauri", "go-native", "rust-native", "python-native"] },
         "command": { "type": "string", "minLength": 1 },
         "platform": { "enum": ["windows-x64", "macos-universal", "linux-x64"] }
       }
