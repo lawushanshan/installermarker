@@ -23,7 +23,9 @@ jobs:
       - run: npm run check
       - run: npm test
       - name: Verify tag matches package version
-        run: test "v$(node -p \"require('./package.json').version\")" = "$GITHUB_REF_NAME"
+        run: |
+          package_version="$(node -p "require('./package.json').version")"
+          test "v${package_version}" = "$GITHUB_REF_NAME"
       - run: npm pack
       - name: Create GitHub release
         uses: softprops/action-gh-release@3bb12739c298aeb8a4eeaf626c5b8d85266b0e65 # v2
