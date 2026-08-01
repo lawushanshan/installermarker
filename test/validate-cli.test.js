@@ -2,7 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { execFile } from "node:child_process";
-import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
@@ -95,5 +95,6 @@ review: []
 
 test("version command reports the installed package version", async () => {
   const result = await run(process.execPath, ["./bin/installermarker.js", "--version"], { cwd: process.cwd() });
-  assert.equal(result.stdout.trim(), "0.2.0");
+  const { version } = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
+  assert.equal(result.stdout.trim(), version);
 });
