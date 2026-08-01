@@ -27,10 +27,10 @@ test("source-build workflow protects execution with an environment and native ta
 });
 
 test("all third-party workflow actions are pinned to immutable commits", async () => {
-  const files = ["ci.yml", "materialize.yml", "build.yml", "release.yml"];
+  const files = ["ci.yml", "materialize.yml", "build.yml", "release.yml", "scorecard.yml"];
   for (const file of files) {
     const workflow = await readFile(new URL(`../.github/workflows/${file}`, import.meta.url), "utf8");
-    const actions = [...workflow.matchAll(/^\s*-\s+uses:\s+[^@\s]+@([^\s#]+)/gm)];
+    const actions = [...workflow.matchAll(/^\s*(?:-\s+)?uses:\s+[^@\s]+@([^\s#]+)/gm)];
     assert.ok(actions.length > 0, `${file} has no action references to verify`);
     for (const action of actions) {
       assert.match(action[1], /^[0-9a-f]{40}$/i, `${file} contains an unpinned action reference`);
@@ -39,7 +39,7 @@ test("all third-party workflow actions are pinned to immutable commits", async (
 });
 
 test("workflow files parse as YAML and publish npm provenance", async () => {
-  const files = ["ci.yml", "materialize.yml", "build.yml", "release.yml"];
+  const files = ["ci.yml", "materialize.yml", "build.yml", "release.yml", "scorecard.yml"];
   for (const file of files) {
     const workflow = await readFile(new URL(`../.github/workflows/${file}`, import.meta.url), "utf8");
     assert.equal(parseDocument(workflow, { uniqueKeys: true }).errors.length, 0, `${file} is not valid YAML`);
@@ -59,4 +59,16 @@ test("workflow files parse as YAML and publish npm provenance", async () => {
   assert.doesNotMatch(release, /softprops\/action-gh-release/);
   assert.match(release, /id-token: write/);
   assert.match(release, /npm publish --provenance/);
+});
+
+test("scorecard workflow keeps scanning permissions narrow and credentials ephemeral", async () => {
+  const workflow = await readFile(new URL("../.github/workflows/scorecard.yml", import.meta.url), "utf8");
+  assert.match(workflow, /permissions: read-all/);
+  assert.match(workflow, /contents: read/);
+  assert.match(workflow, /id-token: write/);
+  assert.match(workflow, /security-events: write/);
+  assert.match(workflow, /persist-credentials: false/);
+  assert.match(workflow, /publish_results: true/);
+  assert.match(workflow, /results_format: sarif/);
+  assert.doesNotMatch(workflow, /secrets\./);
 });
