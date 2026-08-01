@@ -1,0 +1,38 @@
+name: Materialize Verified Installers
+
+on:
+  workflow_dispatch:
+    inputs:
+      recipe_path:
+        description: Path to a reviewed JSON or YAML recipe committed in this repository.
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  materialize:
+    name: Verify and collect release installers
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Validate reviewed recipe
+        run: node ./bin/installermarker.js validate "${{ inputs.recipe_path }}" --recipe-root "$GITHUB_WORKSPACE"
+      - name: Download and verify installers
+        run: node ./bin/installermarker.js materialize "${{ inputs.recipe_path }}" --recipe-root "$GITHUB_WORKSPACE" --output-dir "$RUNNER_TEMP/installermarker-artifacts"
+      - name: Upload verified artifacts
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: verified-installers-${{ github.run_id }}
+          path: ${{ runner.temp }}/installermarker-artifacts
+          if-no-files-found: error
+          retention-days: 14

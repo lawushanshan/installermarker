@@ -1,0 +1,78 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { parseArguments } from "../src/cli.js";
+import { parseGitHubUrl } from "../src/github.js";
+
+test("parses a repository URL and output options", () => {
+  const options = parseArguments(["https://github.com/acme/widget", "--recipe", "--format", "yaml"]);
+  assert.equal(options.url, "https://github.com/acme/widget");
+  assert.equal(options.recipe, true);
+  assert.equal(options.format, "yaml");
+});
+
+test("accepts SSH GitHub URLs", () => {
+  assert.deepEqual(parseGitHubUrl("git@github.com:acme/widget.git"), { owner: "acme", repository: "widget" });
+});
+
+test("rejects unsupported URL hosts", () => {
+  assert.throws(() => parseGitHubUrl("https://gitlab.com/acme/widget"), /GitHub repository URL/);
+});
+
+test("rejects options without a value", () => {
+  assert.throws(() => parseArguments(["https://github.com/acme/widget", "--format"]), /requires a value/);
+});
+
+test("parses safe file output options", () => {
+  const options = parseArguments(["https://github.com/acme/widget", "--recipe", "--output", "recipe.json", "--force"]);
+  assert.equal(options.output, "recipe.json");
+  assert.equal(options.force, true);
+});
+
+test("parses materialize commands", () => {
+  const options = parseArguments(["materialize", "recipe.yaml", "--output-dir", "artifacts", "--recipe-root", "recipes", "--target", "linux-x64"]);
+  assert.equal(options.command, "materialize");
+  assert.equal(options.recipeFile, "recipe.yaml");
+  assert.equal(options.outputDir, "artifacts");
+  assert.equal(options.recipeRoot, "recipes");
+  assert.equal(options.targetPlatform, "linux-x64");
+});
+
+test("allows materialize dry runs without an output directory", () => {
+  const options = parseArguments(["materialize", "recipe.json", "--dry-run"]);
+  assert.equal(options.dryRun, true);
+});
+
+test("requires a destination for materialization", () => {
+  assert.throws(() => parseArguments(["materialize", "recipe.json"]), /requires --output-dir/);
+});
+
+test("parses validation commands and strict mode", () => {
+  const options = parseArguments(["validate", "recipe.json", "--strict", "--format", "json"]);
+  assert.equal(options.command, "validate");
+  assert.equal(options.recipeFile, "recipe.json");
+  assert.equal(options.strict, true);
+  assert.equal(options.format, "json");
+});
+
+test("rejects materialization-only options for validation", () => {
+  assert.throws(() => parseArguments(["validate", "recipe.json", "--output-dir", "artifacts"]), /validate accepts/);
+});
+
+test("parses explicit source-build acknowledgement", () => {
+  const options = parseArguments(["build", "recipe.json", "--target", "linux-x64", "--workspace", "work", "--output-dir", "artifacts", "--allow-unsafe-local-build"]);
+  assert.equal(options.command, "build");
+  assert.equal(options.targetPlatform, "linux-x64");
+  assert.equal(options.allowUnsafeLocalBuild, true);
+});
+
+test("parses artifact verification commands", () => {
+  const options = parseArguments(["verify", "artifacts", "--json"]);
+  assert.equal(options.command, "verify");
+  assert.equal(options.artifactDirectory, "artifacts");
+  assert.equal(options.format, "json");
+});
+
+test("accepts a version request without a repository URL", () => {
+  const options = parseArguments(["--version"]);
+  assert.equal(options.version, true);
+});

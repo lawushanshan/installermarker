@@ -1,0 +1,92 @@
+name: Build Local Installers
+
+on:
+  workflow_dispatch:
+    inputs:
+      recipe_path:
+        description: Path to a reviewed JSON or YAML recipe committed in this repository.
+        required: true
+        type: string
+      target:
+        description: Target platform to build.
+        required: true
+        default: all
+        type: choice
+        options: [all, windows-x64, macos-universal, linux-x64]
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    if: ${{ inputs.target == 'all' || inputs.target == 'windows-x64' }}
+    runs-on: windows-latest
+    timeout-minutes: 45
+    environment: source-build
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: node ./bin/installermarker.js validate "${{ inputs.recipe_path }}" --recipe-root "$env:GITHUB_WORKSPACE"
+      - run: node ./bin/installermarker.js build "${{ inputs.recipe_path }}" --recipe-root "$env:GITHUB_WORKSPACE" --target windows-x64 --workspace "$env:RUNNER_TEMP\\installermarker-source" --output-dir "$env:RUNNER_TEMP\\installermarker-artifacts" --allow-unsafe-local-build
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: built-installers-windows-${{ github.run_id }}
+          path: ${{ runner.temp }}/installermarker-artifacts
+          if-no-files-found: error
+          retention-days: 14
+
+  macos:
+    if: ${{ inputs.target == 'all' || inputs.target == 'macos-universal' }}
+    runs-on: macos-latest
+    timeout-minutes: 45
+    environment: source-build
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: node ./bin/installermarker.js validate "${{ inputs.recipe_path }}" --recipe-root "$GITHUB_WORKSPACE"
+      - run: node ./bin/installermarker.js build "${{ inputs.recipe_path }}" --recipe-root "$GITHUB_WORKSPACE" --target macos-universal --workspace "$RUNNER_TEMP/installermarker-source" --output-dir "$RUNNER_TEMP/installermarker-artifacts" --allow-unsafe-local-build
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: built-installers-macos-${{ github.run_id }}
+          path: ${{ runner.temp }}/installermarker-artifacts
+          if-no-files-found: error
+          retention-days: 14
+
+  linux:
+    if: ${{ inputs.target == 'all' || inputs.target == 'linux-x64' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment: source-build
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Install Linux desktop build prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev
+      - run: node ./bin/installermarker.js validate "${{ inputs.recipe_path }}" --recipe-root "$GITHUB_WORKSPACE"
+      - run: node ./bin/installermarker.js build "${{ inputs.recipe_path }}" --recipe-root "$GITHUB_WORKSPACE" --target linux-x64 --workspace "$RUNNER_TEMP/installermarker-source" --output-dir "$RUNNER_TEMP/installermarker-artifacts" --allow-unsafe-local-build
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: built-installers-linux-${{ github.run_id }}
+          path: ${{ runner.temp }}/installermarker-artifacts
+          if-no-files-found: error
+          retention-days: 14

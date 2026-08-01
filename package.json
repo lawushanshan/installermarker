@@ -1,0 +1,48 @@
+{
+  "name": "installermarker",
+  "version": "0.2.0",
+  "description": "Turn reviewed GitHub projects into verified cross-platform local installer artifacts.",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lawushanshan/installermarker.git"
+  },
+  "bugs": {
+    "url": "https://github.com/lawushanshan/installermarker/issues"
+  },
+  "homepage": "https://github.com/lawushanshan/installermarker#readme",
+  "type": "module",
+  "bin": {
+    "installermarker": "./bin/installermarker.js"
+  },
+  "files": [
+    "bin",
+    "src",
+    "schema",
+    "README.md",
+    "README.zh-CN.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node ./bin/installermarker.js",
+    "test": "node --test",
+    "check": "node --check ./bin/installermarker.js && node --check ./src/*.js",
+    "pack:dry-run": "npm pack --dry-run"
+  },
+  "keywords": [
+    "github",
+    "installer",
+    "packaging",
+    "release",
+    "cross-platform"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "ajv": "8.20.0",
+    "ajv-formats": "3.0.1",
+    "yaml": "2.9.0"
+  }
+}
