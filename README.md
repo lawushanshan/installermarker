@@ -23,7 +23,7 @@ Requires Node.js 20 or later.
 Install the current GitHub Release package:
 
 ```bash
-npm install --global https://github.com/lawushanshan/installermarker/releases/download/v0.2.1/installermarker-0.2.1.tgz
+npm install --global https://github.com/lawushanshan/installermarker/releases/download/v0.2.2/installermarker-0.2.2.tgz
 ```
 
 Check the installed CLI version with `installermarker --version`. Once npm publishing is enabled, the same commands can also be run with `npx installermarker`.

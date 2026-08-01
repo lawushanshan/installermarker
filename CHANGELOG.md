@@ -2,6 +2,11 @@
 
 All notable changes to InstallerMarker are documented here. Versions follow Semantic Versioning.
 
+## 0.2.2 - 2026-08-01
+
+- Replaced the deprecated Node 20-based release action with the GitHub CLI available on hosted runners.
+- Verified that release creation publishes exactly one packed CLI asset.
+
 ## 0.2.1 - 2026-08-01
 
 - Fixed release tag version validation and documented GitHub Release installation.
