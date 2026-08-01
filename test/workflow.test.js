@@ -46,11 +46,15 @@ test("workflow files parse as YAML and publish npm provenance", async () => {
   }
   const release = await readFile(new URL("../.github/workflows/release.yml", import.meta.url), "utf8");
   assert.match(release, /package_version="\$\(node -p "require\('\.\/package\.json'\)\.version"\)/);
+  assert.match(release, /attestations: write/);
+  assert.match(release, /actions\/attest@508db95dd578ae2727ebd6217d5ba78e4fbda05d # v4\.2\.1/);
+  assert.match(release, /id: assets/);
   assert.match(release, /artifacts=\(installermarker-\*\.tgz\)/);
   assert.match(release, /test "\$\{#artifacts\[@\]\}" -eq 1/);
   assert.match(release, /checksum="\$\{artifacts\[0\]\}\.sha256"/);
   assert.match(release, /sha256sum "\$\{artifacts\[0\]\}" > "\$checksum"/);
-  assert.match(release, /gh release create "\$GITHUB_REF_NAME" "\$\{artifacts\[0\]\}" "\$checksum"/);
+  assert.match(release, /subject-checksums: \$\{\{ steps\.assets\.outputs\.checksum \}\}/);
+  assert.match(release, /gh release create "\$GITHUB_REF_NAME" "\$\{\{ steps\.assets\.outputs\.tarball \}\}" "\$\{\{ steps\.assets\.outputs\.checksum \}\}"/);
   assert.match(release, /GH_TOKEN: \$\{\{ github\.token \}\}/);
   assert.doesNotMatch(release, /softprops\/action-gh-release/);
   assert.match(release, /id-token: write/);

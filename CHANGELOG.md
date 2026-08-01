@@ -2,6 +2,11 @@
 
 All notable changes to InstallerMarker are documented here. Versions follow Semantic Versioning.
 
+## 0.2.5 - 2026-08-01
+
+- Added GitHub Artifact Attestations for release tarballs.
+- Documented attestation verification alongside SHA-256 verification.
+
 ## 0.2.4 - 2026-08-01
 
 - Publish a SHA-256 checksum alongside each GitHub Release tarball.
