@@ -20,23 +20,29 @@ It never clones, installs dependencies from, or executes the inspected repositor
 
 Requires Node.js 20 or later.
 
-Check the installed CLI version with `installermarker --version`.
+Install the current GitHub Release package:
 
 ```bash
-npx installermarker https://github.com/owner/repository
-npx installermarker https://github.com/owner/repository --recipe --format yaml
-npx installermarker https://github.com/owner/repository --recipe --format json --output installermarker.json
-npx installermarker validate installermarker.json
-npx installermarker materialize installermarker.json --dry-run
-npx installermarker materialize installermarker.json --output-dir artifacts/v1
-npx installermarker materialize installermarker.json --target linux-x64 --output-dir artifacts/linux
-npx installermarker verify artifacts/v1
+npm install --global https://github.com/lawushanshan/installermarker/releases/download/v0.2.0/installermarker-0.2.0.tgz
+```
+
+Check the installed CLI version with `installermarker --version`. Once npm publishing is enabled, the same commands can also be run with `npx installermarker`.
+
+```bash
+installermarker https://github.com/owner/repository
+installermarker https://github.com/owner/repository --recipe --format yaml
+installermarker https://github.com/owner/repository --recipe --format json --output installermarker.json
+installermarker validate installermarker.json
+installermarker materialize installermarker.json --dry-run
+installermarker materialize installermarker.json --output-dir artifacts/v1
+installermarker materialize installermarker.json --target linux-x64 --output-dir artifacts/linux
+installermarker verify artifacts/v1
 ```
 
 For private repositories or higher GitHub API limits, set a token with read-only repository access:
 
 ```bash
-GITHUB_TOKEN=github_pat_xxx npx installermarker https://github.com/owner/repository --recipe
+GITHUB_TOKEN=github_pat_xxx installermarker https://github.com/owner/repository --recipe
 ```
 
 The token is used only for GitHub API requests during that invocation and is never written to disk.
