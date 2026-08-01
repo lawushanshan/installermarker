@@ -23,7 +23,7 @@ Requires Node.js 20 or later.
 Install the current GitHub Release package:
 
 ```bash
-npm install --global https://github.com/lawushanshan/installermarker/releases/download/v0.2.4/installermarker-0.2.4.tgz
+npm install --global https://github.com/lawushanshan/installermarker/releases/download/v0.2.5/installermarker-0.2.5.tgz
 ```
 
 Check the installed CLI version with `installermarker --version`. Once npm publishing is enabled, the same commands can also be run with `npx installermarker`.
@@ -31,11 +31,12 @@ Check the installed CLI version with `installermarker --version`. Once npm publi
 To verify the downloaded release before installing it locally:
 
 ```bash
-curl -LO https://github.com/lawushanshan/installermarker/releases/download/v0.2.4/installermarker-0.2.4.tgz
-curl -LO https://github.com/lawushanshan/installermarker/releases/download/v0.2.4/installermarker-0.2.4.tgz.sha256
-sha256sum -c installermarker-0.2.4.tgz.sha256 # Linux
-shasum -a 256 -c installermarker-0.2.4.tgz.sha256 # macOS
-npm install --global ./installermarker-0.2.4.tgz
+curl -LO https://github.com/lawushanshan/installermarker/releases/download/v0.2.5/installermarker-0.2.5.tgz
+curl -LO https://github.com/lawushanshan/installermarker/releases/download/v0.2.5/installermarker-0.2.5.tgz.sha256
+sha256sum -c installermarker-0.2.5.tgz.sha256 # Linux
+shasum -a 256 -c installermarker-0.2.5.tgz.sha256 # macOS
+gh attestation verify ./installermarker-0.2.5.tgz --repo lawushanshan/installermarker
+npm install --global ./installermarker-0.2.5.tgz
 ```
 
 ```bash
@@ -79,7 +80,7 @@ For Electron and Tauri projects without ready-made installers, review the genera
 
 ## Project lifecycle
 
-Pull requests run syntax checks, unit tests, and a package-content check on Node.js 20 and 22. Pushing a tag such as `v0.2.0` creates an npm tarball and attaches it to a GitHub Release. npm publishing is opt-in and requires configuring the `NPM_TOKEN` repository secret.
+Pull requests run syntax checks, unit tests, and a package-content check on Node.js 20 and 22. Pushing a tag such as `v0.2.0` creates an npm tarball, SHA-256 checksum, and GitHub Artifact Attestation, then attaches the assets to a GitHub Release. npm publishing is opt-in and requires configuring the `NPM_TOKEN` repository secret.
 
 Before the first release, create a GitHub repository, add it as the `origin` remote, and push `main`:
 
