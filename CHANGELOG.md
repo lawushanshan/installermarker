@@ -2,7 +2,7 @@
 
 All notable changes to InstallerMarker are documented here. Versions follow Semantic Versioning.
 
-## 0.2.0 - Unreleased
+## 0.2.0 - 2026-08-01
 
 - Added JSON Schema-backed `validate` command with CI strict mode.
 - Added verified materialization of existing GitHub Release installers and provenance manifests.
