@@ -12,6 +12,8 @@
 
 仓库内的 GitHub Actions 落盘工作流只拥有 `contents: read` 权限，不会保留检出凭据，并且只读取已经检出的控制仓库中的配方。因此必须保护配方变更和工作流手动触发权限。
 
+Scorecard 工作流只使用只读仓库权限，以及发布 SARIF 结果和 Scorecard 结果所需的 `security-events` 与 OIDC 权限。它禁用检出凭据保留，也不会接收仓库密钥。
+
 源码构建工作流会执行经过明确审核的仓库代码。它使用受保护 environment、临时托管 Runner、`contents: read`、禁用检出凭据保留、隔离 home，以及传给目标命令的精简环境。这并不能让任意未审核代码变得安全；绝不能向 `source-build` environment 配置签名证书、部署令牌或生产密钥。
 
 ## 漏洞报告
