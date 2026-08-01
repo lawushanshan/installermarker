@@ -2,6 +2,11 @@
 
 All notable changes to InstallerMarker are documented here. Versions follow Semantic Versioning.
 
+## 0.2.4 - 2026-08-01
+
+- Publish a SHA-256 checksum alongside each GitHub Release tarball.
+- Document verified local installation in English and Chinese.
+
 ## 0.2.3 - 2026-08-01
 
 - Updated pinned GitHub Actions to the current Node 24-based major versions.
