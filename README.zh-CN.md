@@ -20,23 +20,29 @@ InstallerMarker 是一个安全的第一阶段分析工具，用于将开源 Git
 
 需要 Node.js 20 或更高版本。
 
-可使用 `installermarker --version` 查看当前安装的 CLI 版本。
+通过当前 GitHub Release 安装：
 
 ```bash
-npx installermarker https://github.com/owner/repository
-npx installermarker https://github.com/owner/repository --recipe --format yaml
-npx installermarker https://github.com/owner/repository --recipe --format json --output installermarker.json
-npx installermarker validate installermarker.json
-npx installermarker materialize installermarker.json --dry-run
-npx installermarker materialize installermarker.json --output-dir artifacts/v1
-npx installermarker materialize installermarker.json --target linux-x64 --output-dir artifacts/linux
-npx installermarker verify artifacts/v1
+npm install --global https://github.com/lawushanshan/installermarker/releases/download/v0.2.0/installermarker-0.2.0.tgz
+```
+
+可使用 `installermarker --version` 查看当前安装的 CLI 版本。启用 npm 发布后，也可以使用 `npx installermarker` 运行相同命令。
+
+```bash
+installermarker https://github.com/owner/repository
+installermarker https://github.com/owner/repository --recipe --format yaml
+installermarker https://github.com/owner/repository --recipe --format json --output installermarker.json
+installermarker validate installermarker.json
+installermarker materialize installermarker.json --dry-run
+installermarker materialize installermarker.json --output-dir artifacts/v1
+installermarker materialize installermarker.json --target linux-x64 --output-dir artifacts/linux
+installermarker verify artifacts/v1
 ```
 
 访问私有仓库，或希望获得更高 GitHub API 限额时，可以提供只读仓库权限的令牌：
 
 ```bash
-GITHUB_TOKEN=github_pat_xxx npx installermarker https://github.com/owner/repository --recipe
+GITHUB_TOKEN=github_pat_xxx installermarker https://github.com/owner/repository --recipe
 ```
 
 令牌只用于本次执行中的 GitHub API 请求，不会写入磁盘。
