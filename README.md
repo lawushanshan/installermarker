@@ -23,7 +23,7 @@ Requires Node.js 20 or later.
 Install the current GitHub Release package:
 
 ```bash
-npm install --global https://github.com/lawushanshan/installermarker/releases/download/v0.2.7/installermarker-0.2.7.tgz
+npm install --global https://github.com/lawushanshan/installermarker/releases/download/v0.2.8/installermarker-0.2.8.tgz
 ```
 
 Check the installed CLI version with `installermarker --version`. Once npm publishing is enabled, the same commands can also be run with `npx installermarker`.
@@ -31,12 +31,12 @@ Check the installed CLI version with `installermarker --version`. Once npm publi
 To verify the downloaded release before installing it locally:
 
 ```bash
-curl -LO https://github.com/lawushanshan/installermarker/releases/download/v0.2.7/installermarker-0.2.7.tgz
-curl -LO https://github.com/lawushanshan/installermarker/releases/download/v0.2.7/installermarker-0.2.7.tgz.sha256
-sha256sum -c installermarker-0.2.7.tgz.sha256 # Linux
-shasum -a 256 -c installermarker-0.2.7.tgz.sha256 # macOS
-gh attestation verify ./installermarker-0.2.7.tgz --repo lawushanshan/installermarker
-npm install --global ./installermarker-0.2.7.tgz
+curl -LO https://github.com/lawushanshan/installermarker/releases/download/v0.2.8/installermarker-0.2.8.tgz
+curl -LO https://github.com/lawushanshan/installermarker/releases/download/v0.2.8/installermarker-0.2.8.tgz.sha256
+sha256sum -c installermarker-0.2.8.tgz.sha256 # Linux
+shasum -a 256 -c installermarker-0.2.8.tgz.sha256 # macOS
+gh attestation verify ./installermarker-0.2.8.tgz --repo lawushanshan/installermarker
+npm install --global ./installermarker-0.2.8.tgz
 ```
 
 ```bash
@@ -76,7 +76,7 @@ Use `validate` before materialization. It reports schema errors separately from 
 
 Use `verify <artifact-directory>` to recheck an existing `artifacts.json` or `build-artifacts.json` directory offline. It validates the manifest contract, filenames, byte sizes, and SHA-256 values without executing any artifact.
 
-For Electron and Tauri projects without ready-made installers, review the generated source-build recipe, set its reviewed `build.command`, and run one native build per target. Go and Rust projects receive a `build-native` target: select and review the native packaging command and output directory before execution. The Worker accepts Windows `.msi`/`.exe`, macOS `.dmg`/`.pkg`, and Linux `.AppImage`/`.deb`/`.rpm` packages. See [source builds](docs/source-build.md).
+For Electron and Tauri projects without ready-made installers, review the generated source-build recipe, set its reviewed `build.command`, and run one native build per target. Go, Rust, and Python projects receive a `build-native` target: select and review the native packaging command and output directory before execution. Python projects default to `dist` and `build`, but the entrypoint and packager remain explicit review items. The Worker accepts Windows `.msi`/`.exe`, macOS `.dmg`/`.pkg`, and Linux `.AppImage`/`.deb`/`.rpm` packages. See [source builds](docs/source-build.md).
 
 ## Project lifecycle
 
@@ -97,7 +97,7 @@ The scheduled [OpenSSF Scorecard workflow](.github/workflows/scorecard.yml) and 
 
 ## Scope and roadmap
 
-Version 0.2 includes static analysis, pinned recipe generation, verified materialization of existing installers, and reviewed Electron/Tauri, Go, and Rust source-build paths. The next phase is opinionated packaging adapters for Go/Rust, support for Python and other project families, SBOM generation, malware/dependency scans, install/uninstall smoke tests, and signing isolated from untrusted builds. Windows Authenticode and macOS Developer ID/notarization credentials must never be exposed to repository build scripts.
+Version 0.2 includes static analysis, pinned recipe generation, verified materialization of existing installers, and reviewed Electron/Tauri, Go, Rust, and Python source-build paths. The next phase is opinionated packaging adapters, SBOM generation, malware/dependency scans, install/uninstall smoke tests, and signing isolated from untrusted builds. Windows Authenticode and macOS Developer ID/notarization credentials must never be exposed to repository build scripts.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md), [docs/architecture.md](docs/architecture.md), [docs/materialize.md](docs/materialize.md), [docs/verify.md](docs/verify.md), and [docs/releasing.md](docs/releasing.md).
 

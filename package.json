@@ -1,6 +1,6 @@
 {
   "name": "installermarker",
-  "version": "0.2.7",
+  "version": "0.2.8",
   "description": "Turn reviewed GitHub projects into verified cross-platform local installer artifacts.",
   "repository": {
     "type": "git",

@@ -9,6 +9,14 @@ test("detects Electron from package.json", () => {
   assert.deepEqual(project.artifactDirectories, ["dist", "out"]);
 });
 
+test("detects Python projects as reviewed native-build candidates", () => {
+  const project = detectProject([{ path: "pyproject.toml", content: "[project]\nname = 'widget'\n" }]);
+  assert.equal(project.kind, "python");
+  assert.equal(project.strategy, "python-native");
+  assert.deepEqual(project.artifactDirectories, ["dist", "build"]);
+  assert.deepEqual(classifyTargets([], project).map((target) => target.status), ["likely", "likely", "likely"]);
+});
+
 test("release assets override inferred target support", () => {
   const targets = classifyTargets([{ name: "widget-1.0.0-win-x64.msi" }, { name: "widget-1.0.0-macos.dmg" }, { name: "widget-1.0.0.AppImage" }], { kind: "unknown" });
   assert.deepEqual(targets.map((target) => target.status), ["available", "available", "available"]);

@@ -1,10 +1,10 @@
 # Building local installers from source
 
-InstallerMarker can build reviewed Electron and Tauri projects into native local-installation packages. It also creates a `build-native` path for Go and Rust projects: the reviewer must choose the native packager and resulting installer directory. This path is intentionally separate from `materialize`: it executes source code and dependencies, so it must run in an ephemeral, secret-free environment.
+InstallerMarker can build reviewed Electron and Tauri projects into native local-installation packages. It also creates a `build-native` path for Go, Rust, and Python projects: the reviewer must choose the native packager and resulting installer directory. This path is intentionally separate from `materialize`: it executes source code and dependencies, so it must run in an ephemeral, secret-free environment.
 
 ## Prepare a recipe
 
-Inspect the repository and produce a JSON or YAML recipe. For Electron and Tauri, InstallerMarker proposes source-build targets, artifact directories, and often a suggested command. Go and Rust projects receive `build-native`; add the reviewed command and installer directory for the selected native packaging tool. Review and edit the recipe before execution:
+Inspect the repository and produce a JSON or YAML recipe. For Electron and Tauri, InstallerMarker proposes source-build targets, artifact directories, and often a suggested command. Go, Rust, and Python projects receive `build-native`; add the reviewed command and installer directory for the selected native packaging tool. Review and edit the recipe before execution:
 
 ```json
 {
@@ -21,7 +21,7 @@ Inspect the repository and produce a JSON or YAML recipe. For Electron and Tauri
 
 Run `installermarker validate recipe.json`. The source-build status must be `ready`. A source build command is a security boundary: do not copy a suggestion into `build.command` until it has been reviewed for that repository and pinned commit.
 
-For `build-native`, use `build.strategy: go-native` or `rust-native`, retain `packaging: build-native`, and configure a command that produces a platform installer in `artifactDirectories`. The Worker deliberately does not select a packager on the reviewer's behalf: Windows, macOS, and Linux packaging tools have different trust and signing requirements.
+For `build-native`, use `build.strategy: go-native`, `rust-native`, or `python-native`, retain `packaging: build-native`, and configure a command that produces a platform installer in `artifactDirectories`. Python detection defaults to `dist` and `build`, but does not guess an entrypoint or packaging command. The reviewer must select and audit a tool such as PyInstaller, Briefcase, or Nuitka for the pinned source revision. The Worker deliberately does not select a packager on the reviewer's behalf: Windows, macOS, and Linux packaging tools have different trust and signing requirements.
 
 ## Local execution
 
