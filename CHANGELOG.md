@@ -2,6 +2,12 @@
 
 All notable changes to InstallerMarker are documented here. Versions follow Semantic Versioning.
 
+## 0.2.7 - 2026-08-01
+
+- Added a pinned CodeQL workflow for JavaScript and TypeScript SAST analysis.
+- Reduced Release token permissions to the release job instead of the workflow level.
+- Added a direct private vulnerability reporting link to the security policy.
+
 ## 0.2.6 - 2026-08-01
 
 - Added a scheduled OpenSSF Scorecard workflow with SARIF upload and immutable action pins.
