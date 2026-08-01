@@ -18,4 +18,4 @@ Scorecard 工作流只使用只读仓库权限，以及发布 SARIF 结果和 Sc
 
 ## 漏洞报告
 
-请勿通过公开 Issue 报告疑似漏洞。配置安全联系人后，请私下联系该联系人；在此之前，请使用仓库的 GitHub 私密漏洞报告功能。
+请勿通过公开 Issue 报告疑似漏洞，请使用 [GitHub 私密漏洞报告表单](https://github.com/lawushanshan/installermarker/security/advisories/new)。
