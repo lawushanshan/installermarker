@@ -2,6 +2,11 @@
 
 All notable changes to InstallerMarker are documented here. Versions follow Semantic Versioning.
 
+## 0.2.1 - 2026-08-01
+
+- Fixed release tag version validation and documented GitHub Release installation.
+- Updated pinned GitHub Actions to current Node 24-based major versions.
+
 ## 0.2.0 - 2026-08-01
 
 - Added JSON Schema-backed `validate` command with CI strict mode.
