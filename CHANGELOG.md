@@ -2,6 +2,11 @@
 
 All notable changes to InstallerMarker are documented here. Versions follow Semantic Versioning.
 
+## 0.2.6 - 2026-08-01
+
+- Added a scheduled OpenSSF Scorecard workflow with SARIF upload and immutable action pins.
+- Added a short-retention SARIF artifact for offline review of supply-chain findings.
+
 ## 0.2.5 - 2026-08-01
 
 - Added GitHub Artifact Attestations for release tarballs.
