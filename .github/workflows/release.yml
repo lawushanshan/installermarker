@@ -7,6 +7,7 @@ on:
 permissions:
   contents: write
   id-token: write
+  attestations: write
 
 jobs:
   release:
@@ -27,14 +28,23 @@ jobs:
           package_version="$(node -p "require('./package.json').version")"
           test "v${package_version}" = "$GITHUB_REF_NAME"
       - run: npm pack
-      - name: Create GitHub release
+      - name: Prepare release assets
+        id: assets
         run: |
           shopt -s nullglob
           artifacts=(installermarker-*.tgz)
           test "${#artifacts[@]}" -eq 1
           checksum="${artifacts[0]}.sha256"
           sha256sum "${artifacts[0]}" > "$checksum"
-          gh release create "$GITHUB_REF_NAME" "${artifacts[0]}" "$checksum" \
+          echo "tarball=${artifacts[0]}" >> "$GITHUB_OUTPUT"
+          echo "checksum=$checksum" >> "$GITHUB_OUTPUT"
+      - name: Attest release tarball
+        uses: actions/attest@508db95dd578ae2727ebd6217d5ba78e4fbda05d # v4.2.1
+        with:
+          subject-checksums: ${{ steps.assets.outputs.checksum }}
+      - name: Create GitHub release
+        run: |
+          gh release create "$GITHUB_REF_NAME" "${{ steps.assets.outputs.tarball }}" "${{ steps.assets.outputs.checksum }}" \
             --generate-notes \
             --title "$GITHUB_REF_NAME"
         env:

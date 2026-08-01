@@ -23,7 +23,7 @@ InstallerMarker 是一个安全的第一阶段分析工具，用于将开源 Git
 通过当前 GitHub Release 安装：
 
 ```bash
-npm install --global https://github.com/lawushanshan/installermarker/releases/download/v0.2.4/installermarker-0.2.4.tgz
+npm install --global https://github.com/lawushanshan/installermarker/releases/download/v0.2.5/installermarker-0.2.5.tgz
 ```
 
 可使用 `installermarker --version` 查看当前安装的 CLI 版本。启用 npm 发布后，也可以使用 `npx installermarker` 运行相同命令。
@@ -31,11 +31,12 @@ npm install --global https://github.com/lawushanshan/installermarker/releases/do
 需要下载到本地后再安装时，可先验证 Release 附带的 SHA-256 校验文件：
 
 ```bash
-curl -LO https://github.com/lawushanshan/installermarker/releases/download/v0.2.4/installermarker-0.2.4.tgz
-curl -LO https://github.com/lawushanshan/installermarker/releases/download/v0.2.4/installermarker-0.2.4.tgz.sha256
-sha256sum -c installermarker-0.2.4.tgz.sha256 # Linux
-shasum -a 256 -c installermarker-0.2.4.tgz.sha256 # macOS
-npm install --global ./installermarker-0.2.4.tgz
+curl -LO https://github.com/lawushanshan/installermarker/releases/download/v0.2.5/installermarker-0.2.5.tgz
+curl -LO https://github.com/lawushanshan/installermarker/releases/download/v0.2.5/installermarker-0.2.5.tgz.sha256
+sha256sum -c installermarker-0.2.5.tgz.sha256 # Linux
+shasum -a 256 -c installermarker-0.2.5.tgz.sha256 # macOS
+gh attestation verify ./installermarker-0.2.5.tgz --repo lawushanshan/installermarker
+npm install --global ./installermarker-0.2.5.tgz
 ```
 
 ```bash
@@ -81,7 +82,7 @@ GITHUB_TOKEN=github_pat_xxx installermarker https://github.com/owner/repository 
 
 ## 项目发布与维护
 
-Pull Request 会在 Node.js 20 和 22 上执行语法检查、单元测试与 npm 包内容检查。推送 `v0.2.0` 这样的标签后，发布工作流会生成 npm tarball 并附加到 GitHub Release。只有在仓库配置了 `NPM_TOKEN` 后才会发布 npm 包。
+Pull Request 会在 Node.js 20 和 22 上执行语法检查、单元测试与 npm 包内容检查。推送 `v0.2.0` 这样的标签后，发布工作流会生成 npm tarball、SHA-256 校验文件和 GitHub Artifact Attestation，并附加到 GitHub Release。只有在仓库配置了 `NPM_TOKEN` 后才会发布 npm 包。
 
 首次发布前，请创建 GitHub 仓库，将其添加为 `origin` 远端并推送 `main`：
 
