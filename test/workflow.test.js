@@ -45,6 +45,7 @@ test("workflow files parse as YAML and publish npm provenance", async () => {
     assert.equal(parseDocument(workflow, { uniqueKeys: true }).errors.length, 0, `${file} is not valid YAML`);
   }
   const release = await readFile(new URL("../.github/workflows/release.yml", import.meta.url), "utf8");
+  assert.match(release, /package_version="\$\(node -p "require\('\.\/package\.json'\)\.version"\)/);
   assert.match(release, /id-token: write/);
   assert.match(release, /npm publish --provenance/);
 });
