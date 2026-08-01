@@ -23,7 +23,7 @@ Requires Node.js 20 or later.
 Install the current GitHub Release package:
 
 ```bash
-npm install --global https://github.com/lawushanshan/installermarker/releases/download/v0.2.5/installermarker-0.2.5.tgz
+npm install --global https://github.com/lawushanshan/installermarker/releases/download/v0.2.6/installermarker-0.2.6.tgz
 ```
 
 Check the installed CLI version with `installermarker --version`. Once npm publishing is enabled, the same commands can also be run with `npx installermarker`.
@@ -31,12 +31,12 @@ Check the installed CLI version with `installermarker --version`. Once npm publi
 To verify the downloaded release before installing it locally:
 
 ```bash
-curl -LO https://github.com/lawushanshan/installermarker/releases/download/v0.2.5/installermarker-0.2.5.tgz
-curl -LO https://github.com/lawushanshan/installermarker/releases/download/v0.2.5/installermarker-0.2.5.tgz.sha256
-sha256sum -c installermarker-0.2.5.tgz.sha256 # Linux
-shasum -a 256 -c installermarker-0.2.5.tgz.sha256 # macOS
-gh attestation verify ./installermarker-0.2.5.tgz --repo lawushanshan/installermarker
-npm install --global ./installermarker-0.2.5.tgz
+curl -LO https://github.com/lawushanshan/installermarker/releases/download/v0.2.6/installermarker-0.2.6.tgz
+curl -LO https://github.com/lawushanshan/installermarker/releases/download/v0.2.6/installermarker-0.2.6.tgz.sha256
+sha256sum -c installermarker-0.2.6.tgz.sha256 # Linux
+shasum -a 256 -c installermarker-0.2.6.tgz.sha256 # macOS
+gh attestation verify ./installermarker-0.2.6.tgz --repo lawushanshan/installermarker
+npm install --global ./installermarker-0.2.6.tgz
 ```
 
 ```bash
@@ -92,6 +92,8 @@ git push -u origin main
 The published package metadata points to this GitHub repository for source, issue tracking, and homepage links. Keep these fields aligned if the repository is transferred.
 
 Enable branch protection for `main`: require the CI workflow, require pull-request review, and forbid force pushes. Configure GitHub Actions with minimal permissions and use a protected environment for release credentials.
+
+The scheduled [OpenSSF Scorecard workflow](.github/workflows/scorecard.yml) checks the repository's supply-chain practices. It runs on pushes to `main` and weekly, uploads SARIF results to Code Scanning, and retains a short-lived SARIF artifact for review.
 
 ## Scope and roadmap
 
