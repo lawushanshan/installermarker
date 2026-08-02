@@ -22,6 +22,6 @@ InstallerMarker 在 `.github/workflows/materialize.yml` 中提供了手动触发
 - `source_run_id`：生成已验证产物目录的 workflow run ID。
 - `artifact_name`：上传的 artifact 名称，例如 `verified-installers-<run_id>` 或 `built-installers-linux-<run_id>`。
 
-该工作流会下载对应的 GitHub Actions artifact，依次运行 `verify`、`sbom`、`smoke-plan`、`scan-plan`、`sign-plan` 和 `release-plan`，然后把生成的 JSON 文件作为 `release-gate-plans-<run_id>` 上传。
+该工作流会下载对应的 GitHub Actions artifact，依次运行 `verify`、`sbom`、`smoke-plan`、`scan-plan`、`sign-plan`、`release-plan` 和 `gate-verify`，然后把生成的 JSON 文件作为 `release-gate-plans-<run_id>` 上传。其中 `gate-verification.json` 是这组审查包自身的机器可读一致性报告；如果缺少必要 JSON 文件，或某个文件与 `verify.json` 记录的事实冲突，工作流会失败。
 
 这个工作流只拥有 `actions: read` 和 `contents: read` 权限，不使用仓库密钥，不运行安装包，不执行冒烟测试，不调用扫描器，不签名或公证产物，也不会发布 Release。它的输出应作为审查包；只有审查通过后，后续受保护的扫描、签名、公证或发布服务才应消费这些已验证安装包。

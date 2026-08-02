@@ -45,6 +45,7 @@ jobs:
           node ./bin/installermarker.js scan-plan "$RUNNER_TEMP/installermarker-gate-input" --json > "$RUNNER_TEMP/installermarker-release-gate/scan-plan.json"
           node ./bin/installermarker.js sign-plan "$RUNNER_TEMP/installermarker-gate-input" --json > "$RUNNER_TEMP/installermarker-release-gate/sign-plan.json"
           node ./bin/installermarker.js release-plan "$RUNNER_TEMP/installermarker-gate-input" --json > "$RUNNER_TEMP/installermarker-release-gate/release-plan.json"
+          node ./bin/installermarker.js gate-verify "$RUNNER_TEMP/installermarker-release-gate" --json > "$RUNNER_TEMP/installermarker-release-gate/gate-verification.json"
       - name: Upload release gate plans
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:

@@ -20,6 +20,6 @@ After a materialization or source-build workflow uploads a verified artifact dir
 - `source_run_id`: the workflow run ID that produced the verified artifact directory.
 - `artifact_name`: the uploaded artifact name, such as `verified-installers-<run_id>` or `built-installers-linux-<run_id>`.
 
-The workflow downloads that GitHub Actions artifact, runs `verify`, `sbom`, `smoke-plan`, `scan-plan`, `sign-plan`, and `release-plan`, then uploads the resulting JSON files as `release-gate-plans-<run_id>`.
+The workflow downloads that GitHub Actions artifact, runs `verify`, `sbom`, `smoke-plan`, `scan-plan`, `sign-plan`, `release-plan`, and `gate-verify`, then uploads the resulting JSON files as `release-gate-plans-<run_id>`. The `gate-verification.json` file is a machine-readable consistency report for the bundle itself; it fails the workflow if any required JSON file is missing or contradicts `verify.json`.
 
 This workflow has only `actions: read` and `contents: read` permissions. It uses no repository secrets, does not run installers, does not run smoke tests, does not invoke scanners, does not sign or notarize artifacts, and does not publish releases. Treat its output as the review bundle that must pass before any later protected scanner, signing, notarization, or publication service is allowed to consume the verified installers.

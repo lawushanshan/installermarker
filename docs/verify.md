@@ -20,3 +20,5 @@ Use `installermarker sign-plan artifacts/linux --format json` to generate plan-o
 Use `installermarker scan-plan artifacts/linux --format json` to generate plan-only malware, reputation, and SBOM-correlation scan requests. It records what should be scanned later, but does not upload artifacts or invoke scanners.
 
 Use `installermarker release-plan artifacts/linux --format json` to generate a single plan-only release gate. It verifies local artifact integrity first, then composes the SBOM, smoke-test, scan, and signing plans into one reviewable payload. It does not execute artifacts, run smoke tests, invoke scanners, sign artifacts, notarize packages, or publish releases.
+
+Use `installermarker gate-verify release-gate-plans --format json` to validate a CI-generated release-gate bundle. It checks that the standalone JSON files and the embedded plans in `release-plan.json` agree with `verify.json`.

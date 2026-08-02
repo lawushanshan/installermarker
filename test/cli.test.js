@@ -107,6 +107,13 @@ test("parses release plan commands", () => {
   assert.equal(options.format, "json");
 });
 
+test("parses release gate verification commands", () => {
+  const options = parseArguments(["gate-verify", "release-gate", "--json"]);
+  assert.equal(options.command, "gate-verify");
+  assert.equal(options.gateDirectory, "release-gate");
+  assert.equal(options.format, "json");
+});
+
 test("accepts a version request without a repository URL", () => {
   const options = parseArguments(["--version"]);
   assert.equal(options.version, true);

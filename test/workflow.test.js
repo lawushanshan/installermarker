@@ -37,6 +37,8 @@ test("release-gate workflow composes review plans without secrets or execution",
   assert.match(workflow, /installermarker\.js scan-plan/);
   assert.match(workflow, /installermarker\.js sign-plan/);
   assert.match(workflow, /installermarker\.js release-plan/);
+  assert.match(workflow, /installermarker\.js gate-verify/);
+  assert.match(workflow, /gate-verification\.json/);
   assert.match(workflow, /release-gate-plans-\$\{\{ github\.run_id \}\}/);
   assert.doesNotMatch(workflow, /secrets\./);
   assert.doesNotMatch(workflow, /--allow-unsafe-local-build/);

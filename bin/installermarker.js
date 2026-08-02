@@ -2,6 +2,7 @@
 
 import { analyzeRepository } from "../src/analyze.js";
 import { buildRecipe } from "../src/build.js";
+import { formatGateVerification, verifyGateDirectory } from "../src/gate.js";
 import { writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { materializeRecipe } from "../src/materialize.js";
@@ -82,6 +83,13 @@ async function main() {
       return;
     }
 
+    if (options.command === "gate-verify") {
+      const result = await verifyGateDirectory(options.gateDirectory);
+      console.log(formatGateVerification(result, options.format));
+      if (!result.valid) process.exitCode = 1;
+      return;
+    }
+
     if (options.command === "build") {
       const recipe = await readRecipe(options.recipeFile, { root: options.recipeRoot });
       if (options.dryRun) {
@@ -126,7 +134,7 @@ async function main() {
       console.log(output);
     }
   } catch (error) {
-    const operation = options.command === "materialize" ? "Materialization" : options.command === "build" ? "Build" : options.command === "validate" ? "Validation" : options.command === "verify" ? "Verification" : options.command === "sbom" ? "SBOM generation" : options.command === "smoke-plan" ? "Smoke plan generation" : options.command === "sign-plan" ? "Signing plan generation" : options.command === "scan-plan" ? "Scan plan generation" : options.command === "release-plan" ? "Release plan generation" : "Analysis";
+    const operation = options.command === "materialize" ? "Materialization" : options.command === "build" ? "Build" : options.command === "validate" ? "Validation" : options.command === "verify" ? "Verification" : options.command === "sbom" ? "SBOM generation" : options.command === "smoke-plan" ? "Smoke plan generation" : options.command === "sign-plan" ? "Signing plan generation" : options.command === "scan-plan" ? "Scan plan generation" : options.command === "release-plan" ? "Release plan generation" : options.command === "gate-verify" ? "Release gate verification" : "Analysis";
     console.error(`${operation} failed: ${error.message}`);
     process.exitCode = 1;
   }
