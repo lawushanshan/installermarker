@@ -58,6 +58,7 @@ installermarker scan-verify artifacts/v1 --result scan-result.json --format json
 installermarker release-plan artifacts/v1 --format json > release-plan.json
 installermarker release-verify artifacts/v1 --smoke-result smoke-result.json --scan-result scan-result.json --sign-result sign-result.json --format json > release-verification.json
 installermarker publish-plan artifacts/v1 --release-verification release-verification.json --release-tag v1.0.0 --format json > publish-plan.json
+installermarker publish-verify artifacts/v1 --release-verification release-verification.json --release-tag v1.0.0 --result publish-result.json --format json > publish-verification.json
 installermarker gate-verify release-gate-plans --format json > gate-verification.json
 ```
 
@@ -100,6 +101,7 @@ GITHUB_TOKEN=github_pat_xxx installermarker https://github.com/owner/repository 
 使用 `release-plan <产物目录>` 可以生成单个只读发布门禁计划，汇总验证证据、SBOM、冒烟测试计划、扫描计划和签名计划。它不会执行产物、运行冒烟测试、调用扫描器、签名产物、执行公证或发布 Release。
 使用 `release-verify <产物目录> --smoke-result <smoke-result.json> --scan-result <scan-result.json> --sign-result <sign-result.json>` 可以重新验证本地产物，并把外部 smoke、扫描和签名原始结果聚合成最终发布证据报告。它会在本地重新运行三类结果校验器，不信任预先生成的校验报告。
 使用 `publish-plan <产物目录> --release-verification <release-verification.json> --release-tag <tag>` 可以在最终发布证据通过后生成只读发布计划。它会校验最终证据与已验证产物目录一致，并输出草稿 Release 资产检查清单，其中包含安装包和补充证据文件的 SHA-256 哈希；但不会上传产物、创建 Release、发布包、签名产物、执行公证或访问外部服务。
+使用 `publish-verify <产物目录> --release-verification <release-verification.json> --release-tag <tag> --result <publish-result.json>` 可以在受保护发布服务返回原始发布结果后进行校验。它会在本地重建发布计划，并检查来源、清单、发布标签、草稿状态、Release URL、资产文件名、资产类型、SHA-256 哈希和汇总结论，但不会访问 GitHub Releases，也不会发布任何内容。
 使用 `gate-verify <发布门禁目录>` 可以校验 CI 生成的发布门禁 JSON 包。它会检查 `verify.json`、`sbom.json`、`smoke-plan.json`、`scan-plan.json`、`sign-plan.json` 和 `release-plan.json` 是否存在且内部事实一致。
 
 对于尚未发布安装包的 Electron 和 Tauri 项目，请审核生成的源码构建配方、填写经过审核的 `build.command`，然后分别在原生目标系统上构建。Go、Rust 和 Python 项目会生成 `build-native` 目标：需先选择并审核原生打包命令与产物目录。Python 默认使用 `dist` 和 `build` 作为候选目录，但入口和打包器仍必须人工确认。Worker 只接受 Windows `.msi/.exe`、macOS `.dmg/.pkg` 和 Linux `.AppImage/.deb/.rpm` 包。如果已审核构建命令在配置的产物目录中输出了常见 SPDX 或 CycloneDX SBOM 文档，Worker 会复制并哈希记录为构建 SBOM 证据；它不会自行生成这些文档。详见[源码构建说明](docs/source-build.zh-CN.md)。
@@ -123,7 +125,7 @@ git push -u origin main
 
 ## 范围与路线图
 
-0.2 版本包含静态分析、固定 commit 的配方生成、已有安装包的校验落盘、已验证产物目录的只读 SBOM 投影、只读 smoke-test 计划生成、外部隔离 smoke 结果校验、只读签名请求计划、外部受保护签名结果校验、只读产物扫描请求计划、外部批准扫描器结果校验、最终发布证据聚合、只读发布请求计划和 publish-plan 工作流生成、只读发布门禁计划、发布门禁包一致性校验，以及带构建 provenance 和构建产出 SBOM 证据采集的 Electron/Tauri、Go、Rust、Python 源码构建路径。下一阶段将增加约定式打包适配器、更完整的构建期依赖 SBOM 生成、隔离的 smoke-test 执行集成、批准扫描器执行集成，以及受保护的签名服务。
+0.2 版本包含静态分析、固定 commit 的配方生成、已有安装包的校验落盘、已验证产物目录的只读 SBOM 投影、只读 smoke-test 计划生成、外部隔离 smoke 结果校验、只读签名请求计划、外部受保护签名结果校验、只读产物扫描请求计划、外部批准扫描器结果校验、最终发布证据聚合、只读发布请求计划和 publish-plan 工作流生成、外部受保护发布结果校验、只读发布门禁计划、发布门禁包一致性校验，以及带构建 provenance 和构建产出 SBOM 证据采集的 Electron/Tauri、Go、Rust、Python 源码构建路径。下一阶段将增加约定式打包适配器、更完整的构建期依赖 SBOM 生成、隔离的 smoke-test 执行集成、批准扫描器执行集成，以及受保护的签名服务。
 
 Windows Authenticode 证书，以及 macOS Developer ID 和公证凭据，绝不能暴露给仓库的构建脚本。
 

@@ -170,6 +170,20 @@ test("requires release verification and tag for publish plans", () => {
   assert.throws(() => parseArguments(["publish-plan", "artifacts", "--release-verification", "release-verification.json"]), /requires --release-verification/);
 });
 
+test("parses publish verification commands", () => {
+  const options = parseArguments(["publish-verify", "artifacts", "--release-verification", "release-verification.json", "--release-tag", "v1.0.0", "--result", "publish-result.json", "--json"]);
+  assert.equal(options.command, "publish-verify");
+  assert.equal(options.artifactDirectory, "artifacts");
+  assert.equal(options.releaseVerificationFile, "release-verification.json");
+  assert.equal(options.releaseTag, "v1.0.0");
+  assert.equal(options.resultFile, "publish-result.json");
+  assert.equal(options.format, "json");
+});
+
+test("requires result, release verification, and tag for publish verification", () => {
+  assert.throws(() => parseArguments(["publish-verify", "artifacts", "--release-verification", "release-verification.json", "--release-tag", "v1.0.0"]), /requires --result/);
+});
+
 test("parses release gate verification commands", () => {
   const options = parseArguments(["gate-verify", "release-gate", "--json"]);
   assert.equal(options.command, "gate-verify");

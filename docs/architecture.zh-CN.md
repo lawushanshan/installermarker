@@ -21,7 +21,7 @@ GitHub URL -> 只读分析 -> 评估结果与配方 -> 经审核的构建请求
 
 当前落盘 Worker 的范围刻意保持很小。它会验证资产所属仓库、平台对应的安装包扩展名、声明大小、单文件 1 GiB 上限、HTTPS 重定向目标和 SHA-256。所有下载都保留在随机 staging 目录中，直到选中的资产全部通过验证；它拒绝覆盖已有文件，并生成由 `schema/artifact-manifest.schema.json` 描述的 `artifacts.json`。
 
-当前 CLI 还提供了面向已验证产物目录的只读投影和结果校验。`sbom` 会从清单派生机器可读的组件清单，`smoke-plan` 会为每个安装包派生安装、启动和卸载检查计划，`smoke-verify` 会把外部隔离 smoke runner 结果与已验证产物哈希和生成的 smoke 计划进行校验，`sign-plan` 会为独立受保护的签名服务派生签名请求，`sign-verify` 会把外部受保护签名服务结果与已验证产物哈希和生成的签名计划进行校验，`scan-plan` 会派生恶意软件、信誉和 SBOM 关联扫描请求，`scan-verify` 会把外部批准扫描器结果与已验证产物哈希进行校验，`release-plan` 会把这些门禁组合成一份可审核的发布载荷，`release-verify` 会重新验证本地产物，并把外部 smoke、扫描和签名原始结果聚合成最终发布证据报告，而不是信任预先生成的校验报告；`publish-plan` 会把有效的最终发布证据转成草稿 Release 资产检查清单，但不访问发布服务；`gate-verify` 会校验 CI 生成的发布门禁 JSON 包是否完整且内部一致。这些命令都不会执行产物、上传样本、访问扫描服务、发布 Release，也不会访问签名凭据。
+当前 CLI 还提供了面向已验证产物目录的只读投影和结果校验。`sbom` 会从清单派生机器可读的组件清单，`smoke-plan` 会为每个安装包派生安装、启动和卸载检查计划，`smoke-verify` 会把外部隔离 smoke runner 结果与已验证产物哈希和生成的 smoke 计划进行校验，`sign-plan` 会为独立受保护的签名服务派生签名请求，`sign-verify` 会把外部受保护签名服务结果与已验证产物哈希和生成的签名计划进行校验，`scan-plan` 会派生恶意软件、信誉和 SBOM 关联扫描请求，`scan-verify` 会把外部批准扫描器结果与已验证产物哈希进行校验，`release-plan` 会把这些门禁组合成一份可审核的发布载荷，`release-verify` 会重新验证本地产物，并把外部 smoke、扫描和签名原始结果聚合成最终发布证据报告，而不是信任预先生成的校验报告；`publish-plan` 会把有效的最终发布证据转成草稿 Release 资产检查清单，但不访问发布服务；`publish-verify` 会把受保护发布服务的原始结果与本地重建的发布计划进行校验，但不访问 GitHub Releases；`gate-verify` 会校验 CI 生成的发布门禁 JSON 包是否完整且内部一致。这些命令都不会执行产物、上传样本、访问扫描服务、发布 Release，也不会访问签名凭据。
 
 托管的 GitHub Actions 工作流也遵循这些边界：物化、发布门禁计划、发布证据校验和发布计划生成都只使用只读仓库权限，不使用仓库密钥。它们交换的是短期 GitHub Actions artifact，而不是签名凭据或发布服务权限。
 

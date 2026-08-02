@@ -31,4 +31,6 @@ Use `installermarker release-verify artifacts/linux --smoke-result smoke-result.
 
 Use `installermarker publish-plan artifacts/linux --release-verification release-verification.json --release-tag v1.0.0 --format json` after final release evidence passes. The command validates the final evidence against the verified artifact directory and emits a draft release asset checklist with SHA-256 hashes for installers and supplemental evidence files. It does not upload artifacts, create releases, publish packages, sign artifacts, notarize packages, or contact external services.
 
+Use `installermarker publish-verify artifacts/linux --release-verification release-verification.json --release-tag v1.0.0 --result publish-result.json --format json` after a protected release service returns a raw publication result. The command rebuilds the publish plan locally and verifies the returned release tag, draft state, release URL, asset names, asset types, SHA-256 hashes, and summary verdicts. It does not contact GitHub Releases or publish anything.
+
 Use `installermarker gate-verify release-gate-plans --format json` to validate a CI-generated release-gate bundle. It checks that the standalone JSON files and the embedded plans in `release-plan.json` agree with `verify.json`.

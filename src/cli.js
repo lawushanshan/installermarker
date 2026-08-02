@@ -3,8 +3,9 @@ const GATE_COMMANDS = new Set(["gate-verify"]);
 const RESULT_COMMANDS = new Set(["scan-verify", "smoke-verify", "sign-verify"]);
 const RELEASE_VERIFY_COMMANDS = new Set(["release-verify"]);
 const PUBLISH_PLAN_COMMANDS = new Set(["publish-plan"]);
+const PUBLISH_VERIFY_COMMANDS = new Set(["publish-verify"]);
 const ARTIFACT_DIRECTORY_COMMANDS = new Set(["verify", ...PROJECTION_COMMANDS]);
-const COMMANDS = new Set(["inspect", "materialize", "validate", "build", ...ARTIFACT_DIRECTORY_COMMANDS, ...GATE_COMMANDS, ...RESULT_COMMANDS, ...RELEASE_VERIFY_COMMANDS, ...PUBLISH_PLAN_COMMANDS]);
+const COMMANDS = new Set(["inspect", "materialize", "validate", "build", ...ARTIFACT_DIRECTORY_COMMANDS, ...GATE_COMMANDS, ...RESULT_COMMANDS, ...RELEASE_VERIFY_COMMANDS, ...PUBLISH_PLAN_COMMANDS, ...PUBLISH_VERIFY_COMMANDS]);
 
 export function parseArguments(argumentsList) {
   const args = [...argumentsList];
@@ -83,7 +84,7 @@ export function parseArguments(argumentsList) {
   }
 
   if (!options.help && !options.version && !options.input) {
-    throw new Error(command === "inspect" ? "A GitHub repository URL is required." : GATE_COMMANDS.has(command) ? "A release gate directory is required." : ARTIFACT_DIRECTORY_COMMANDS.has(command) || RESULT_COMMANDS.has(command) || RELEASE_VERIFY_COMMANDS.has(command) || PUBLISH_PLAN_COMMANDS.has(command) ? "An artifact directory is required." : "A JSON or YAML recipe file is required.");
+    throw new Error(command === "inspect" ? "A GitHub repository URL is required." : GATE_COMMANDS.has(command) ? "A release gate directory is required." : ARTIFACT_DIRECTORY_COMMANDS.has(command) || RESULT_COMMANDS.has(command) || RELEASE_VERIFY_COMMANDS.has(command) || PUBLISH_PLAN_COMMANDS.has(command) || PUBLISH_VERIFY_COMMANDS.has(command) ? "An artifact directory is required." : "A JSON or YAML recipe file is required.");
   }
   if (!["text", "json", "yaml"].includes(options.format)) throw new Error("--format must be text, json, or yaml.");
 
@@ -142,6 +143,13 @@ export function parseArguments(argumentsList) {
       throw new Error(`${command} accepts only --release-verification, --release-tag, --format, and --json options.`);
     }
     if (options.format === "yaml") throw new Error(`${command} supports only text and json output.`);
+  } else if (PUBLISH_VERIFY_COMMANDS.has(command)) {
+    options.artifactDirectory = options.input;
+    if (!options.help && (!options.resultFile || !options.releaseVerificationFile || !options.releaseTag)) throw new Error(`${command} requires --result, --release-verification, and --release-tag.`);
+    if (options.recipe || options.output || options.force || options.dryRun || options.outputDir || options.workspace || options.recipeRoot || options.targetPlatform || options.allowUnsafeLocalBuild || options.smokeResultFile || options.scanResultFile || options.signResultFile || options.token || options.strict) {
+      throw new Error(`${command} accepts only --result, --release-verification, --release-tag, --format, and --json options.`);
+    }
+    if (options.format === "yaml") throw new Error(`${command} supports only text and json output.`);
   } else {
     options.artifactDirectory = options.input;
     if (options.recipe || options.output || options.force || options.dryRun || options.outputDir || options.workspace || options.recipeRoot || options.targetPlatform || options.allowUnsafeLocalBuild || options.resultFile || options.smokeResultFile || options.scanResultFile || options.signResultFile || options.releaseVerificationFile || options.releaseTag || options.token || options.strict) {
@@ -169,6 +177,7 @@ export function usage() {
   installermarker release-plan <artifact-directory> [--format text|json]
   installermarker release-verify <artifact-directory> --smoke-result <smoke-result.json> --scan-result <scan-result.json> --sign-result <sign-result.json> [--format text|json]
   installermarker publish-plan <artifact-directory> --release-verification <release-verification.json> --release-tag <tag> [--format text|json]
+  installermarker publish-verify <artifact-directory> --release-verification <release-verification.json> --release-tag <tag> --result <publish-result.json> [--format text|json]
   installermarker gate-verify <release-gate-directory> [--format text|json]
   installermarker verify <artifact-directory> [--format text|json]
 

@@ -33,4 +33,6 @@ installermarker verify artifacts/linux --format json
 
 最终发布证据通过后，可以使用 `installermarker publish-plan artifacts/linux --release-verification release-verification.json --release-tag v1.0.0 --format json`。该命令会校验最终证据与已验证产物目录一致，并输出草稿 Release 资产检查清单，其中包含安装包和补充证据文件的 SHA-256 哈希。它不会上传产物、创建 Release、发布包、签名产物、执行公证或访问外部服务。
 
+受保护发布服务返回原始发布结果后，可以使用 `installermarker publish-verify artifacts/linux --release-verification release-verification.json --release-tag v1.0.0 --result publish-result.json --format json`。该命令会在本地重建发布计划，并校验返回的发布标签、草稿状态、Release URL、资产文件名、资产类型、SHA-256 哈希和汇总结论。它不会访问 GitHub Releases，也不会发布任何内容。
+
 使用 `installermarker gate-verify release-gate-plans --format json` 可以校验 CI 生成的发布门禁包。它会检查独立 JSON 文件以及 `release-plan.json` 内嵌计划是否都与 `verify.json` 记录的事实一致。
