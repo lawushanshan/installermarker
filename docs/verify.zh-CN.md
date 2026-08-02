@@ -17,6 +17,8 @@ installermarker verify artifacts/linux --format json
 
 使用 `installermarker smoke-plan artifacts/linux --format json` 可以为每个已验证安装包生成只读的安装、启动和卸载检查计划。它不会执行这份计划；真正运行必须放在后续隔离的原生宿主环境中。
 
+在独立隔离的 smoke runner 返回结果文件后，可以使用 `installermarker smoke-verify artifacts/linux --result smoke-result.json --format json`。该命令会重新验证本地产物目录，校验 smoke 结果契约，并检查 runner 记录的源、清单、产物哈希、安装器类型、目标宿主、步骤名称、步骤状态和汇总结论是否与生成的 smoke 计划一致。它不会安装、启动、卸载或执行产物。
+
 使用 `installermarker sign-plan artifacts/linux --format json` 可以为受保护签名服务生成只读签名请求。它会记录预期签名 profile 和阶段，但不会访问凭据，也不会调用签名工具。
 
 使用 `installermarker scan-plan artifacts/linux --format json` 可以生成只读的恶意软件、信誉和 SBOM 关联扫描请求。它只记录后续应该扫描什么，不会上传产物，也不会调用扫描器。

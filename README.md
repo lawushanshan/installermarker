@@ -50,6 +50,7 @@ installermarker materialize installermarker.json --target linux-x64 --output-dir
 installermarker verify artifacts/v1
 installermarker sbom artifacts/v1 --format json > sbom.json
 installermarker smoke-plan artifacts/v1 --format json > smoke-plan.json
+installermarker smoke-verify artifacts/v1 --result smoke-result.json --format json > smoke-verification.json
 installermarker sign-plan artifacts/v1 --format json > sign-plan.json
 installermarker scan-plan artifacts/v1 --format json > scan-plan.json
 installermarker scan-verify artifacts/v1 --result scan-result.json --format json > scan-verification.json
@@ -86,6 +87,7 @@ The inspection report now includes a read-only dependency inventory for supporte
 Use `verify <artifact-directory>` to recheck an existing `artifacts.json` or `build-artifacts.json` directory offline. It validates the manifest contract, filenames, byte sizes, and SHA-256 values for installers and any build-produced SBOM documents without executing any artifact.
 Use `sbom <artifact-directory>` to derive a read-only component inventory from the verified manifest. For source-build outputs, it carries forward verified build-produced SBOM documents as evidence. It never executes or installs any artifact.
 Use `smoke-plan <artifact-directory>` to derive a plan-only install/launch/uninstall checklist for each verified installer. It does not execute the plan or run installers.
+Use `smoke-verify <artifact-directory> --result <smoke-result.json>` to validate an external isolated smoke-runner result against the verified artifact directory and generated smoke plan. It checks source, manifest, artifact hashes, installer types, target hosts, step names, step statuses, and summary verdicts, but does not install, launch, uninstall, or execute any artifact.
 Use `sign-plan <artifact-directory>` to derive a plan-only signing request for a separately protected signing service. It does not access certificates, sign artifacts, notarize packages, or publish releases.
 Use `scan-plan <artifact-directory>` to derive a plan-only malware/reputation/SBOM-correlation scan request. It does not execute scanners, upload artifacts, or contact reputation services.
 Use `scan-verify <artifact-directory> --result <scan-result.json>` to validate an external approved scanner result against the verified artifact directory. It checks source, manifest, artifact hashes, stage statuses, and summary verdicts, but does not invoke scanners or upload artifacts.
@@ -113,7 +115,7 @@ The scheduled [OpenSSF Scorecard workflow](.github/workflows/scorecard.yml) and 
 
 ## Scope and roadmap
 
-Version 0.2 includes static analysis, pinned recipe generation, verified materialization of existing installers, reviewed Electron/Tauri, Go, Rust, and Python source-build paths with build provenance and build-produced SBOM evidence capture, read-only SBOM projection, plan-only smoke-test generation, plan-only signing requests, plan-only artifact scan requests, external approved scanner result verification, a combined plan-only release gate for verified artifact directories, and release-gate bundle consistency verification. The next phase is opinionated packaging adapters, fuller dependency SBOM generation during builds, isolated smoke-test execution, approved scanner execution integration, and a protected signing service. Windows Authenticode and macOS Developer ID/notarization credentials must never be exposed to repository build scripts.
+Version 0.2 includes static analysis, pinned recipe generation, verified materialization of existing installers, reviewed Electron/Tauri, Go, Rust, and Python source-build paths with build provenance and build-produced SBOM evidence capture, read-only SBOM projection, plan-only smoke-test generation, external isolated smoke-result verification, plan-only signing requests, plan-only artifact scan requests, external approved scanner result verification, a combined plan-only release gate for verified artifact directories, and release-gate bundle consistency verification. The next phase is opinionated packaging adapters, fuller dependency SBOM generation during builds, isolated smoke-test execution integration, approved scanner execution integration, and a protected signing service. Windows Authenticode and macOS Developer ID/notarization credentials must never be exposed to repository build scripts.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md), [docs/architecture.md](docs/architecture.md), [docs/materialize.md](docs/materialize.md), [docs/verify.md](docs/verify.md), and [docs/releasing.md](docs/releasing.md).
 

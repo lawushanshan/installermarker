@@ -9,6 +9,7 @@ All notable changes to InstallerMarker are documented here. Versions follow Sema
 - Captured build-produced SPDX/CycloneDX SBOM documents from reviewed source-build artifact directories as hashed build evidence.
 - Added a read-only `gate-verify` command that validates release-gate JSON bundles for completeness and internal consistency.
 - Added a read-only `scan-verify` command and scanner-result contract for validating externally produced approved-scanner results against verified artifact hashes.
+- Added a read-only `smoke-verify` command and smoke-result contract for validating external isolated smoke-runner results against verified artifacts and generated smoke plans.
 - Shared artifact-manifest projection helpers across read-only plan commands.
 
 ## 0.2.8 - 2026-08-01

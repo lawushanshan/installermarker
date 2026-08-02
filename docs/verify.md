@@ -15,6 +15,8 @@ Use `installermarker sbom artifacts/linux --format json` to project a verified m
 
 Use `installermarker smoke-plan artifacts/linux --format json` to generate a plan-only install/launch/uninstall checklist for each verified installer. It does not execute the checklist; run it only later in an isolated native host.
 
+Use `installermarker smoke-verify artifacts/linux --result smoke-result.json --format json` after a separately isolated smoke runner returns a result file. The command re-verifies the local artifact directory, validates the smoke-result contract, and checks that the runner's source, manifest, artifact hashes, installer types, target hosts, step names, step statuses, and summary verdicts match the generated smoke plan. It does not install, launch, uninstall, or execute artifacts.
+
 Use `installermarker sign-plan artifacts/linux --format json` to generate plan-only signing requests for a protected signing service. It records the expected signing profile and stages, but never accesses credentials or invokes signing tools.
 
 Use `installermarker scan-plan artifacts/linux --format json` to generate plan-only malware, reputation, and SBOM-correlation scan requests. It records what should be scanned later, but does not upload artifacts or invoke scanners.

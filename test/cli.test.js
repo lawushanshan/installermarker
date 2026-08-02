@@ -104,12 +104,24 @@ test("parses scan verification commands", () => {
   const options = parseArguments(["scan-verify", "artifacts", "--result", "scan-result.json", "--json"]);
   assert.equal(options.command, "scan-verify");
   assert.equal(options.artifactDirectory, "artifacts");
-  assert.equal(options.scanResultFile, "scan-result.json");
+  assert.equal(options.resultFile, "scan-result.json");
   assert.equal(options.format, "json");
 });
 
 test("requires a scan result for scan verification", () => {
   assert.throws(() => parseArguments(["scan-verify", "artifacts"]), /requires --result/);
+});
+
+test("parses smoke verification commands", () => {
+  const options = parseArguments(["smoke-verify", "artifacts", "--result", "smoke-result.json", "--json"]);
+  assert.equal(options.command, "smoke-verify");
+  assert.equal(options.artifactDirectory, "artifacts");
+  assert.equal(options.resultFile, "smoke-result.json");
+  assert.equal(options.format, "json");
+});
+
+test("requires a smoke result for smoke verification", () => {
+  assert.throws(() => parseArguments(["smoke-verify", "artifacts"]), /requires --result/);
 });
 
 test("parses release plan commands", () => {
