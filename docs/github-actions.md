@@ -47,6 +47,6 @@ After `release-verify` uploads a valid final evidence report, use `.github/workf
 - `verification_artifact_name`: the uploaded artifact name containing `release-verification.json`.
 - `release_tag`: the draft release tag to record in `publish-plan.json`, such as `v1.0.0`.
 
-The workflow downloads both artifacts, runs `publish-plan`, and uploads `publish-plan.json` as `publish-plan-<run_id>`. The command re-verifies the local artifact directory, validates the final release evidence contract, checks that the evidence belongs to the same source and manifest, and records the exact asset names and SHA-256 hashes reviewers must preserve during publication.
+The workflow downloads both artifacts, runs `publish-plan`, and uploads `publish-plan.json` as `publish-plan-<run_id>`. The command re-verifies the local artifact directory, validates the final release evidence contract, checks that the evidence belongs to the same source and manifest, and records the exact installer and supplemental evidence names plus SHA-256 hashes reviewers must preserve during publication.
 
 This workflow has only `actions: read` and `contents: read` permissions. It uses no repository secrets, does not run installers, does not invoke scanners, does not access signing credentials, does not sign or notarize artifacts, does not create a GitHub Release, and does not publish packages. Treat its output as a manual publication checklist or as input to a separately reviewed protected release service.

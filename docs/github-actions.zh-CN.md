@@ -49,6 +49,6 @@ InstallerMarker 在 `.github/workflows/materialize.yml` 中提供了手动触发
 - `verification_artifact_name`：包含 `release-verification.json` 的 artifact 名称。
 - `release_tag`：写入 `publish-plan.json` 的草稿发布标签，例如 `v1.0.0`。
 
-该工作流会下载两组 artifact，运行 `publish-plan`，并把 `publish-plan.json` 作为 `publish-plan-<run_id>` 上传。该命令会重新验证本地产物目录，校验最终发布证据契约，检查证据是否属于同一来源和清单，并记录发布审核时必须保持不变的产物文件名和 SHA-256 哈希。
+该工作流会下载两组 artifact，运行 `publish-plan`，并把 `publish-plan.json` 作为 `publish-plan-<run_id>` 上传。该命令会重新验证本地产物目录，校验最终发布证据契约，检查证据是否属于同一来源和清单，并记录发布审核时必须保持不变的安装包和补充证据文件名及 SHA-256 哈希。
 
 这个工作流只拥有 `actions: read` 和 `contents: read` 权限，不使用仓库密钥，不运行安装包，不调用扫描器，不访问签名凭据，不签名或公证产物，不创建 GitHub Release，也不会发布包。它的输出应作为人工发布检查清单，或作为单独审查过的受保护发布服务输入。

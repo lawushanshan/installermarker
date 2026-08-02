@@ -1,4 +1,8 @@
+import { join } from "node:path";
+import { hashFile } from "./file-hash.js";
 import { assertVerifiedArtifactDirectory, artifactProjection, manifestProjection } from "./projection.js";
+
+const SHA256_PATTERN = /^[0-9a-f]{64}$/;
 
 function sourceKey(source) {
   return `${source.repository}@${source.commit}`;
@@ -25,19 +29,26 @@ function assertReleaseTag(releaseTag) {
   }
 }
 
-function supplementalAssets(verification) {
+function assertSha256(value, name) {
+  if (typeof value !== "string" || !SHA256_PATTERN.test(value)) {
+    throw new Error(`publish-plan requires a SHA-256 hash for supplemental asset: ${name}`);
+  }
+  return value;
+}
+
+function supplementalAssets(verification, supplementalHashes = {}) {
   return [
-    { name: verification.manifest, type: "artifact-manifest" },
-    { name: "release-verification.json", type: "release-verification" },
+    { name: verification.manifest, type: "artifact-manifest", sha256: assertSha256(supplementalHashes[verification.manifest], verification.manifest) },
+    { name: "release-verification.json", type: "release-verification", sha256: assertSha256(supplementalHashes["release-verification.json"], "release-verification.json") },
     ...(verification.sbomDocuments ?? []).map((document) => ({
       name: document.name,
       type: "build-sbom",
-      sha256: document.sha256
+      sha256: assertSha256(document.sha256, document.name)
     }))
   ];
 }
 
-export function createPublishPlan(verification, releaseVerification, { releaseTag, generatedAt = new Date().toISOString() } = {}) {
+export function createPublishPlan(verification, releaseVerification, { releaseTag, generatedAt = new Date().toISOString(), supplementalHashes } = {}) {
   assertVerifiedArtifactDirectory(verification);
   assertReleaseTag(releaseTag);
   assertReleaseVerificationMatches(verification, releaseVerification);
@@ -66,14 +77,24 @@ export function createPublishPlan(verification, releaseVerification, { releaseTa
       releaseVerificationGeneratedAt: releaseVerification.generatedAt
     },
     assets,
-    supplementalAssets: supplementalAssets(verification),
+    supplementalAssets: supplementalAssets(verification, supplementalHashes),
     checklist: [
       "Confirm redistribution rights and license evidence before publication.",
       "Upload only the listed verified artifact files and supplemental evidence files.",
-      "Verify each uploaded asset hash against requiredSha256 or recorded supplemental hash before making the release public.",
+      "Verify each uploaded asset hash against requiredSha256 or supplemental sha256 before making the release public.",
       "Keep signing, notarization, scanner, and release credentials outside build and smoke-test environments."
     ]
   };
+}
+
+export async function createPublishPlanFromFiles(verification, releaseVerification, { artifactDirectory, releaseVerificationFile, releaseTag, generatedAt } = {}) {
+  if (!artifactDirectory) throw new Error("publish-plan requires an artifact directory to hash supplemental assets.");
+  if (!releaseVerificationFile) throw new Error("publish-plan requires --release-verification to hash final release evidence.");
+  const supplementalHashes = {
+    [verification.manifest]: await hashFile(join(artifactDirectory, verification.manifest)),
+    "release-verification.json": await hashFile(releaseVerificationFile)
+  };
+  return createPublishPlan(verification, releaseVerification, { releaseTag, generatedAt, supplementalHashes });
 }
 
 export function formatPublishPlan(plan, format = "text") {
@@ -88,6 +109,7 @@ export function formatPublishPlan(plan, format = "text") {
     `Supplemental assets: ${plan.supplementalAssets.length}`
   ];
   for (const asset of plan.assets) lines.push(`- ${asset.artifact.platform} ${asset.publishAs} sha256:${asset.requiredSha256}`);
+  for (const asset of plan.supplementalAssets) lines.push(`- supplemental ${asset.type} ${asset.name} sha256:${asset.sha256}`);
   for (const item of plan.checklist) lines.push(`check: ${item}`);
   return lines.join("\n");
 }

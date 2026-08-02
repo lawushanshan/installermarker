@@ -18,6 +18,6 @@
 installermarker publish-plan artifacts/linux --release-verification release-verification.json --release-tag v1.0.0 --format json > publish-plan.json
 ```
 
-该计划会校验最终证据属于当前已验证产物目录，并列出精确的安装包资产、必需 SHA-256、补充证据文件和人工发布检查项。它仍然只是计划：不会上传文件、创建 GitHub Release、发布包、签名产物、执行公证或访问外部服务。
+该计划会校验最终证据属于当前已验证产物目录，并列出精确的安装包资产、必需 SHA-256、补充证据文件及其 SHA-256，以及人工发布检查项。它仍然只是计划：不会上传文件、创建 GitHub Release、发布包、签名产物、执行公证或访问外部服务。
 
 如果需要在仓库中运行，`.github/workflows/publish-plan.yml` 会从两组 GitHub Actions artifact 生成同样的计划：已验证产物目录和 `release-verification.json`。它只使用 `actions: read` 和 `contents: read` 权限，将 `publish-plan.json` 作为短期 artifact 上传，并且仍然不会创建 Release 或发布包。

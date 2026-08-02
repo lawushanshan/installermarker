@@ -86,7 +86,7 @@
       "items": {
         "type": "object",
         "additionalProperties": false,
-        "required": ["name", "type"],
+        "required": ["name", "type", "sha256"],
         "properties": {
           "name": { "type": "string", "pattern": "^[^\\\\/]+$" },
           "type": { "enum": ["artifact-manifest", "release-verification", "build-sbom"] },

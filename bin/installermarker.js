@@ -7,7 +7,7 @@ import { writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { materializeRecipe } from "../src/materialize.js";
 import { formatRecipe, formatReport } from "../src/output.js";
-import { createPublishPlan, formatPublishPlan } from "../src/publish-plan.js";
+import { createPublishPlanFromFiles, formatPublishPlan } from "../src/publish-plan.js";
 import { createReleasePlan, formatReleasePlan } from "../src/release-plan.js";
 import { formatReleaseVerification, readReleaseVerification, verifyReleaseEvidence } from "../src/release-verification.js";
 import { createScanPlan, formatScanPlan } from "../src/scan.js";
@@ -127,7 +127,11 @@ async function main() {
     if (options.command === "publish-plan") {
       const verification = await verifyArtifactDirectory(options.artifactDirectory);
       const releaseVerification = await readReleaseVerification(options.releaseVerificationFile);
-      console.log(formatPublishPlan(createPublishPlan(verification, releaseVerification, { releaseTag: options.releaseTag }), options.format));
+      console.log(formatPublishPlan(await createPublishPlanFromFiles(verification, releaseVerification, {
+        artifactDirectory: options.artifactDirectory,
+        releaseVerificationFile: options.releaseVerificationFile,
+        releaseTag: options.releaseTag
+      }), options.format));
       return;
     }
 

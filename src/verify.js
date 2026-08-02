@@ -1,9 +1,8 @@
 import Ajv2020 from "ajv/dist/2020.js";
 import addFormats from "ajv-formats";
-import { createHash } from "node:crypto";
-import { createReadStream } from "node:fs";
 import { lstat, readFile } from "node:fs/promises";
 import { basename, join, resolve, sep } from "node:path";
+import { hashFile } from "./file-hash.js";
 
 const manifestSchemas = {
   "artifacts.json": JSON.parse(await readFile(new URL("../schema/artifact-manifest.schema.json", import.meta.url), "utf8")),
@@ -29,12 +28,6 @@ function resolveInside(root, name) {
   const path = resolve(root, name);
   if (!path.startsWith(`${root}${sep}`)) throw new Error(`Artifact path escapes its directory: ${name}`);
   return path;
-}
-
-async function hashFile(path) {
-  const hash = createHash("sha256");
-  for await (const chunk of createReadStream(path)) hash.update(chunk);
-  return hash.digest("hex");
 }
 
 export async function verifyArtifactDirectory(directory) {
