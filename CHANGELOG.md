@@ -14,6 +14,7 @@ All notable changes to InstallerMarker are documented here. Versions follow Sema
 - Added a read-only `sign-verify` command and signing-result contract for validating external protected signing-service results against verified artifacts and generated signing plans.
 - Added a read-only `release-verify` command that re-runs smoke, scan, and signing result verification from raw external results and aggregates final release evidence.
 - Added a plan-only `publish-plan` command for turning valid final release evidence into a draft release asset checklist without contacting release services.
+- Added a no-secret GitHub Actions workflow that generates `publish-plan.json` from verified installer artifacts and final release evidence.
 - Shared artifact-manifest projection helpers across read-only plan commands.
 
 ## 0.2.8 - 2026-08-01

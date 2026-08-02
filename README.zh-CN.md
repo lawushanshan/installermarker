@@ -123,7 +123,7 @@ git push -u origin main
 
 ## 范围与路线图
 
-0.2 版本包含静态分析、固定 commit 的配方生成、已有安装包的校验落盘、已验证产物目录的只读 SBOM 投影、只读 smoke-test 计划生成、外部隔离 smoke 结果校验、只读签名请求计划、外部受保护签名结果校验、只读产物扫描请求计划、外部批准扫描器结果校验、最终发布证据聚合、只读发布请求计划、只读发布门禁计划、发布门禁包一致性校验，以及带构建 provenance 和构建产出 SBOM 证据采集的 Electron/Tauri、Go、Rust、Python 源码构建路径。下一阶段将增加约定式打包适配器、更完整的构建期依赖 SBOM 生成、隔离的 smoke-test 执行集成、批准扫描器执行集成，以及受保护的签名服务。
+0.2 版本包含静态分析、固定 commit 的配方生成、已有安装包的校验落盘、已验证产物目录的只读 SBOM 投影、只读 smoke-test 计划生成、外部隔离 smoke 结果校验、只读签名请求计划、外部受保护签名结果校验、只读产物扫描请求计划、外部批准扫描器结果校验、最终发布证据聚合、只读发布请求计划和 publish-plan 工作流生成、只读发布门禁计划、发布门禁包一致性校验，以及带构建 provenance 和构建产出 SBOM 证据采集的 Electron/Tauri、Go、Rust、Python 源码构建路径。下一阶段将增加约定式打包适配器、更完整的构建期依赖 SBOM 生成、隔离的 smoke-test 执行集成、批准扫描器执行集成，以及受保护的签名服务。
 
 Windows Authenticode 证书，以及 macOS Developer ID 和公证凭据，绝不能暴露给仓库的构建脚本。
 
@@ -131,6 +131,6 @@ Windows Authenticode 证书，以及 macOS Developer ID 和公证凭据，绝不
 
 版本变更见 [CHANGELOG.md](CHANGELOG.md)。
 
-需要在仓库中无密钥执行落盘和发布门禁任务时，请参阅 [GitHub Actions Worker 说明](docs/github-actions.zh-CN.md)。
+需要在仓库中无密钥执行落盘、发布门禁、发布证据和发布计划任务时，请参阅 [GitHub Actions Worker 说明](docs/github-actions.zh-CN.md)。
 
 需要在受保护环境中完成 Windows、macOS、Linux 原生源码构建时，请参阅 [源码构建说明](docs/source-build.zh-CN.md)。

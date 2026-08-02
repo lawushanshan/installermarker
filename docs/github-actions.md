@@ -1,4 +1,4 @@
-# GitHub Actions materialization worker
+# GitHub Actions workers
 
 InstallerMarker includes a manually triggered workflow at `.github/workflows/materialize.yml`. Keep reviewed JSON or YAML recipes in the InstallerMarker control repository, then open **Actions**, select **Materialize Verified Installers**, and provide the committed recipe path.
 
@@ -36,3 +36,17 @@ After external isolated smoke, approved scanning, and protected signing services
 The workflow downloads both artifacts, runs `release-verify`, and uploads `release-verification.json` as `release-verification-<run_id>`. The command re-verifies local artifact hashes and reruns smoke, scan, and signing result verification from the raw external files; it does not trust precomputed verification reports.
 
 This workflow also has only `actions: read` and `contents: read` permissions. It uses no repository secrets, does not run installers, does not invoke scanners, does not access signing credentials, does not sign or notarize artifacts, and does not publish releases.
+
+## Installer artifact publish plan
+
+After `release-verify` uploads a valid final evidence report, use `.github/workflows/publish-plan.yml` to generate the draft publication checklist. Open **Actions**, select **Installer Artifact Publish Plan**, and provide:
+
+- `source_run_id`: the workflow run ID that produced the verified artifact directory.
+- `artifact_name`: the uploaded artifact name containing `artifacts.json` or `build-artifacts.json` plus installers.
+- `verification_run_id`: the workflow run ID that uploaded `release-verification.json`.
+- `verification_artifact_name`: the uploaded artifact name containing `release-verification.json`.
+- `release_tag`: the draft release tag to record in `publish-plan.json`, such as `v1.0.0`.
+
+The workflow downloads both artifacts, runs `publish-plan`, and uploads `publish-plan.json` as `publish-plan-<run_id>`. The command re-verifies the local artifact directory, validates the final release evidence contract, checks that the evidence belongs to the same source and manifest, and records the exact asset names and SHA-256 hashes reviewers must preserve during publication.
+
+This workflow has only `actions: read` and `contents: read` permissions. It uses no repository secrets, does not run installers, does not invoke scanners, does not access signing credentials, does not sign or notarize artifacts, does not create a GitHub Release, and does not publish packages. Treat its output as a manual publication checklist or as input to a separately reviewed protected release service.

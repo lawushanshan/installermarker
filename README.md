@@ -121,12 +121,12 @@ The scheduled [OpenSSF Scorecard workflow](.github/workflows/scorecard.yml) and 
 
 ## Scope and roadmap
 
-Version 0.2 includes static analysis, pinned recipe generation, verified materialization of existing installers, reviewed Electron/Tauri, Go, Rust, and Python source-build paths with build provenance and build-produced SBOM evidence capture, read-only SBOM projection, plan-only smoke-test generation, external isolated smoke-result verification, plan-only signing requests, external protected signing-result verification, plan-only artifact scan requests, external approved scanner result verification, final release evidence aggregation, plan-only publish requests, a combined plan-only release gate for verified artifact directories, and release-gate bundle consistency verification. The next phase is opinionated packaging adapters, fuller dependency SBOM generation during builds, isolated smoke-test execution integration, approved scanner execution integration, and a protected signing service. Windows Authenticode and macOS Developer ID/notarization credentials must never be exposed to repository build scripts.
+Version 0.2 includes static analysis, pinned recipe generation, verified materialization of existing installers, reviewed Electron/Tauri, Go, Rust, and Python source-build paths with build provenance and build-produced SBOM evidence capture, read-only SBOM projection, plan-only smoke-test generation, external isolated smoke-result verification, plan-only signing requests, external protected signing-result verification, plan-only artifact scan requests, external approved scanner result verification, final release evidence aggregation, plan-only publish requests and publish-plan workflow generation, a combined plan-only release gate for verified artifact directories, and release-gate bundle consistency verification. The next phase is opinionated packaging adapters, fuller dependency SBOM generation during builds, isolated smoke-test execution integration, approved scanner execution integration, and a protected signing service. Windows Authenticode and macOS Developer ID/notarization credentials must never be exposed to repository build scripts.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md), [docs/architecture.md](docs/architecture.md), [docs/materialize.md](docs/materialize.md), [docs/verify.md](docs/verify.md), and [docs/releasing.md](docs/releasing.md).
 
 Release history is maintained in [CHANGELOG.md](CHANGELOG.md).
 
-For repository-managed, no-secret materialization and release-gate runs, see [the GitHub Actions worker guide](docs/github-actions.md).
+For repository-managed, no-secret materialization, release-gate, release-evidence, and publish-plan runs, see [the GitHub Actions worker guide](docs/github-actions.md).
 
 For native Windows, macOS, and Linux source builds in a protected environment, see [the source-build guide](docs/source-build.md).

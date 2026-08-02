@@ -17,3 +17,5 @@ installermarker publish-plan artifacts/linux --release-verification release-veri
 ```
 
 The plan validates that the final evidence belongs to the verified artifact directory and lists the exact installer assets, required SHA-256 hashes, supplemental evidence files, and manual publication checks. It is still plan-only: it does not upload files, create a GitHub Release, publish packages, sign artifacts, notarize packages, or contact external services.
+
+For repository-managed runs, `.github/workflows/publish-plan.yml` performs the same plan generation from two uploaded GitHub Actions artifacts: the verified artifact directory and `release-verification.json`. It uses only `actions: read` and `contents: read`, uploads `publish-plan.json` as a short-lived artifact, and still does not create a release or publish packages.
