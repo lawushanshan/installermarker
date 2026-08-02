@@ -28,6 +28,10 @@ test("parses safe file output options", () => {
   assert.equal(options.force, true);
 });
 
+test("rejects ignored inspect options", () => {
+  assert.throws(() => parseArguments(["https://github.com/acme/widget", "--strict"]), /inspect accepts/);
+});
+
 test("parses materialize commands", () => {
   const options = parseArguments(["materialize", "recipe.yaml", "--output-dir", "artifacts", "--recipe-root", "recipes", "--target", "linux-x64"]);
   assert.equal(options.command, "materialize");
@@ -182,6 +186,10 @@ test("parses publish verification commands", () => {
 
 test("requires result, release verification, and tag for publish verification", () => {
   assert.throws(() => parseArguments(["publish-verify", "artifacts", "--release-verification", "release-verification.json", "--release-tag", "v1.0.0"]), /requires --result/);
+});
+
+test("rejects unrelated result options for publish verification", () => {
+  assert.throws(() => parseArguments(["publish-verify", "artifacts", "--release-verification", "release-verification.json", "--release-tag", "v1.0.0", "--result", "publish-result.json", "--smoke-result", "smoke-result.json"]), /publish-verify accepts/);
 });
 
 test("parses release gate verification commands", () => {

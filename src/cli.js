@@ -1,11 +1,148 @@
-const PROJECTION_COMMANDS = new Set(["sbom", "smoke-plan", "sign-plan", "scan-plan", "release-plan"]);
-const GATE_COMMANDS = new Set(["gate-verify"]);
-const RESULT_COMMANDS = new Set(["scan-verify", "smoke-verify", "sign-verify"]);
-const RELEASE_VERIFY_COMMANDS = new Set(["release-verify"]);
-const PUBLISH_PLAN_COMMANDS = new Set(["publish-plan"]);
-const PUBLISH_VERIFY_COMMANDS = new Set(["publish-verify"]);
-const ARTIFACT_DIRECTORY_COMMANDS = new Set(["verify", ...PROJECTION_COMMANDS]);
-const COMMANDS = new Set(["inspect", "materialize", "validate", "build", ...ARTIFACT_DIRECTORY_COMMANDS, ...GATE_COMMANDS, ...RESULT_COMMANDS, ...RELEASE_VERIFY_COMMANDS, ...PUBLISH_PLAN_COMMANDS, ...PUBLISH_VERIFY_COMMANDS]);
+const OPTION_FIELDS = [
+  "recipe",
+  "output",
+  "force",
+  "dryRun",
+  "outputDir",
+  "workspace",
+  "recipeRoot",
+  "targetPlatform",
+  "allowUnsafeLocalBuild",
+  "resultFile",
+  "smokeResultFile",
+  "scanResultFile",
+  "signResultFile",
+  "releaseVerificationFile",
+  "releaseTag",
+  "token",
+  "strict"
+];
+
+const textOnly = ["text"];
+const textAndJson = ["text", "json"];
+const allFormats = ["text", "json", "yaml"];
+
+function artifactCommand(accepts = "accepts only --format and --json options.") {
+  return {
+    inputTarget: "artifactDirectory",
+    missingInput: "An artifact directory is required.",
+    allowed: ["format"],
+    formats: textAndJson,
+    accepts
+  };
+}
+
+const COMMAND_SPECS = {
+  inspect: {
+    inputTarget: "url",
+    missingInput: "A GitHub repository URL is required.",
+    allowed: ["recipe", "format", "output", "force", "token"],
+    formats: allFormats,
+    accepts: "inspect accepts only --recipe, --output, --force, --token, --format, and --json options."
+  },
+  materialize: {
+    inputTarget: "recipeFile",
+    allowed: ["outputDir", "targetPlatform", "dryRun", "recipeRoot"],
+    formats: textOnly,
+    accepts: "materialize accepts only --output-dir, --target, --dry-run, and --recipe-root options.",
+    validate(options) {
+      if (!options.help && !options.dryRun && !options.outputDir) throw new Error("materialize requires --output-dir unless --dry-run is used.");
+    }
+  },
+  build: {
+    inputTarget: "recipeFile",
+    allowed: ["targetPlatform", "workspace", "outputDir", "dryRun", "allowUnsafeLocalBuild", "recipeRoot"],
+    formats: textOnly,
+    accepts: "build accepts only --target, --workspace, --output-dir, --dry-run, --allow-unsafe-local-build, and --recipe-root options.",
+    validate(options) {
+      if (!options.help && !options.targetPlatform) throw new Error("build requires --target.");
+      if (!options.help && !options.dryRun && (!options.workspace || !options.outputDir)) throw new Error("build requires --workspace and --output-dir unless --dry-run is used.");
+    }
+  },
+  validate: {
+    inputTarget: "recipeFile",
+    allowed: ["strict", "format", "recipeRoot"],
+    formats: textAndJson,
+    accepts: "validate accepts only --format, --json, --strict, and --recipe-root options."
+  },
+  verify: artifactCommand(),
+  sbom: artifactCommand(),
+  "smoke-plan": artifactCommand(),
+  "sign-plan": artifactCommand(),
+  "scan-plan": artifactCommand(),
+  "release-plan": artifactCommand(),
+  "gate-verify": {
+    inputTarget: "gateDirectory",
+    missingInput: "A release gate directory is required.",
+    allowed: ["format"],
+    formats: textAndJson,
+    accepts: "gate-verify accepts only --format and --json options."
+  },
+  "scan-verify": {
+    ...artifactCommand("scan-verify accepts only --result, --format, and --json options."),
+    allowed: ["resultFile", "format"],
+    validate(options) {
+      if (!options.help && !options.resultFile) throw new Error("scan-verify requires --result.");
+    }
+  },
+  "smoke-verify": {
+    ...artifactCommand("smoke-verify accepts only --result, --format, and --json options."),
+    allowed: ["resultFile", "format"],
+    validate(options) {
+      if (!options.help && !options.resultFile) throw new Error("smoke-verify requires --result.");
+    }
+  },
+  "sign-verify": {
+    ...artifactCommand("sign-verify accepts only --result, --format, and --json options."),
+    allowed: ["resultFile", "format"],
+    validate(options) {
+      if (!options.help && !options.resultFile) throw new Error("sign-verify requires --result.");
+    }
+  },
+  "release-verify": {
+    ...artifactCommand("release-verify accepts only --smoke-result, --scan-result, --sign-result, --format, and --json options."),
+    allowed: ["smokeResultFile", "scanResultFile", "signResultFile", "format"],
+    validate(options) {
+      if (!options.help && (!options.smokeResultFile || !options.scanResultFile || !options.signResultFile)) throw new Error("release-verify requires --smoke-result, --scan-result, and --sign-result.");
+    }
+  },
+  "publish-plan": {
+    ...artifactCommand("publish-plan accepts only --release-verification, --release-tag, --format, and --json options."),
+    allowed: ["releaseVerificationFile", "releaseTag", "format"],
+    validate(options) {
+      if (!options.help && (!options.releaseVerificationFile || !options.releaseTag)) throw new Error("publish-plan requires --release-verification and --release-tag.");
+    }
+  },
+  "publish-verify": {
+    ...artifactCommand("publish-verify accepts only --result, --release-verification, --release-tag, --format, and --json options."),
+    allowed: ["resultFile", "releaseVerificationFile", "releaseTag", "format"],
+    validate(options) {
+      if (!options.help && (!options.resultFile || !options.releaseVerificationFile || !options.releaseTag)) throw new Error("publish-verify requires --result, --release-verification, and --release-tag.");
+    }
+  }
+};
+
+const COMMANDS = new Set(Object.keys(COMMAND_SPECS));
+
+function optionIsSet(options, field) {
+  return typeof options[field] === "boolean" ? options[field] : options[field] !== undefined;
+}
+
+function assertAllowedOptions(command, options, spec) {
+  const allowed = new Set(spec.allowed);
+  for (const field of OPTION_FIELDS) {
+    if (field !== "format" && !allowed.has(field) && optionIsSet(options, field)) {
+      throw new Error(spec.accepts);
+    }
+  }
+}
+
+function assertFormat(command, options, spec) {
+  if (!spec.formats.includes(options.format)) {
+    if (spec.formats.length === 1 && spec.formats[0] === "text") throw new Error(spec.accepts);
+    throw new Error(`${command} supports only ${spec.formats.join(" and ")} output.`);
+  }
+}
 
 export function parseArguments(argumentsList) {
   const args = [...argumentsList];
@@ -84,79 +221,15 @@ export function parseArguments(argumentsList) {
   }
 
   if (!options.help && !options.version && !options.input) {
-    throw new Error(command === "inspect" ? "A GitHub repository URL is required." : GATE_COMMANDS.has(command) ? "A release gate directory is required." : ARTIFACT_DIRECTORY_COMMANDS.has(command) || RESULT_COMMANDS.has(command) || RELEASE_VERIFY_COMMANDS.has(command) || PUBLISH_PLAN_COMMANDS.has(command) || PUBLISH_VERIFY_COMMANDS.has(command) ? "An artifact directory is required." : "A JSON or YAML recipe file is required.");
+    throw new Error(COMMAND_SPECS[command].missingInput ?? "A JSON or YAML recipe file is required.");
   }
   if (!["text", "json", "yaml"].includes(options.format)) throw new Error("--format must be text, json, or yaml.");
 
-  if (command === "inspect") {
-    options.url = options.input;
-    if (options.outputDir || options.dryRun || options.workspace || options.recipeRoot || options.targetPlatform || options.allowUnsafeLocalBuild || options.resultFile || options.smokeResultFile || options.scanResultFile || options.signResultFile || options.releaseVerificationFile || options.releaseTag) throw new Error("Build, materialize, result, and publish options are not valid for inspect.");
-  } else if (command === "materialize") {
-    options.recipeFile = options.input;
-    if (!options.help && !options.dryRun && !options.outputDir) throw new Error("materialize requires --output-dir unless --dry-run is used.");
-    if (options.recipe || options.output || options.force || options.strict || options.workspace || options.allowUnsafeLocalBuild || options.resultFile || options.smokeResultFile || options.scanResultFile || options.signResultFile || options.releaseVerificationFile || options.releaseTag || options.format !== "text" || options.token) {
-      throw new Error("materialize accepts only --output-dir, --target, and --dry-run options.");
-    }
-  } else if (command === "build") {
-    options.recipeFile = options.input;
-    if (!options.help && !options.targetPlatform) throw new Error("build requires --target.");
-    if (!options.help && !options.dryRun && (!options.workspace || !options.outputDir)) throw new Error("build requires --workspace and --output-dir unless --dry-run is used.");
-    if (options.recipe || options.output || options.force || options.strict || options.resultFile || options.smokeResultFile || options.scanResultFile || options.signResultFile || options.releaseVerificationFile || options.releaseTag || options.format !== "text" || options.token) {
-      throw new Error("build accepts only --target, --workspace, --output-dir, --dry-run, and --allow-unsafe-local-build options.");
-    }
-  } else if (command === "validate") {
-    options.recipeFile = options.input;
-    if (options.recipe || options.output || options.force || options.dryRun || options.outputDir || options.workspace || options.targetPlatform || options.allowUnsafeLocalBuild || options.resultFile || options.smokeResultFile || options.scanResultFile || options.signResultFile || options.releaseVerificationFile || options.releaseTag || options.token) {
-      throw new Error("validate accepts only --format, --json, and --strict options.");
-    }
-    if (options.format === "yaml") throw new Error("validate supports only text and json output.");
-  } else if (PROJECTION_COMMANDS.has(command)) {
-    options.artifactDirectory = options.input;
-    if (options.recipe || options.output || options.force || options.dryRun || options.outputDir || options.workspace || options.recipeRoot || options.targetPlatform || options.allowUnsafeLocalBuild || options.resultFile || options.smokeResultFile || options.scanResultFile || options.signResultFile || options.releaseVerificationFile || options.releaseTag || options.token || options.strict) {
-      throw new Error(`${command} accepts only --format and --json options.`);
-    }
-    if (options.format === "yaml") throw new Error(`${command} supports only text and json output.`);
-  } else if (GATE_COMMANDS.has(command)) {
-    options.gateDirectory = options.input;
-    if (options.recipe || options.output || options.force || options.dryRun || options.outputDir || options.workspace || options.recipeRoot || options.targetPlatform || options.allowUnsafeLocalBuild || options.resultFile || options.smokeResultFile || options.scanResultFile || options.signResultFile || options.releaseVerificationFile || options.releaseTag || options.token || options.strict) {
-      throw new Error(`${command} accepts only --format and --json options.`);
-    }
-    if (options.format === "yaml") throw new Error(`${command} supports only text and json output.`);
-  } else if (RESULT_COMMANDS.has(command)) {
-    options.artifactDirectory = options.input;
-    if (!options.help && !options.resultFile) throw new Error(`${command} requires --result.`);
-    if (options.recipe || options.output || options.force || options.dryRun || options.outputDir || options.workspace || options.recipeRoot || options.targetPlatform || options.allowUnsafeLocalBuild || options.smokeResultFile || options.scanResultFile || options.signResultFile || options.releaseVerificationFile || options.releaseTag || options.token || options.strict) {
-      throw new Error(`${command} accepts only --result, --format, and --json options.`);
-    }
-    if (options.format === "yaml") throw new Error(`${command} supports only text and json output.`);
-  } else if (RELEASE_VERIFY_COMMANDS.has(command)) {
-    options.artifactDirectory = options.input;
-    if (!options.help && (!options.smokeResultFile || !options.scanResultFile || !options.signResultFile)) throw new Error(`${command} requires --smoke-result, --scan-result, and --sign-result.`);
-    if (options.recipe || options.output || options.force || options.dryRun || options.outputDir || options.workspace || options.recipeRoot || options.targetPlatform || options.allowUnsafeLocalBuild || options.resultFile || options.releaseVerificationFile || options.releaseTag || options.token || options.strict) {
-      throw new Error(`${command} accepts only --smoke-result, --scan-result, --sign-result, --format, and --json options.`);
-    }
-    if (options.format === "yaml") throw new Error(`${command} supports only text and json output.`);
-  } else if (PUBLISH_PLAN_COMMANDS.has(command)) {
-    options.artifactDirectory = options.input;
-    if (!options.help && (!options.releaseVerificationFile || !options.releaseTag)) throw new Error(`${command} requires --release-verification and --release-tag.`);
-    if (options.recipe || options.output || options.force || options.dryRun || options.outputDir || options.workspace || options.recipeRoot || options.targetPlatform || options.allowUnsafeLocalBuild || options.resultFile || options.smokeResultFile || options.scanResultFile || options.signResultFile || options.token || options.strict) {
-      throw new Error(`${command} accepts only --release-verification, --release-tag, --format, and --json options.`);
-    }
-    if (options.format === "yaml") throw new Error(`${command} supports only text and json output.`);
-  } else if (PUBLISH_VERIFY_COMMANDS.has(command)) {
-    options.artifactDirectory = options.input;
-    if (!options.help && (!options.resultFile || !options.releaseVerificationFile || !options.releaseTag)) throw new Error(`${command} requires --result, --release-verification, and --release-tag.`);
-    if (options.recipe || options.output || options.force || options.dryRun || options.outputDir || options.workspace || options.recipeRoot || options.targetPlatform || options.allowUnsafeLocalBuild || options.smokeResultFile || options.scanResultFile || options.signResultFile || options.token || options.strict) {
-      throw new Error(`${command} accepts only --result, --release-verification, --release-tag, --format, and --json options.`);
-    }
-    if (options.format === "yaml") throw new Error(`${command} supports only text and json output.`);
-  } else {
-    options.artifactDirectory = options.input;
-    if (options.recipe || options.output || options.force || options.dryRun || options.outputDir || options.workspace || options.recipeRoot || options.targetPlatform || options.allowUnsafeLocalBuild || options.resultFile || options.smokeResultFile || options.scanResultFile || options.signResultFile || options.releaseVerificationFile || options.releaseTag || options.token || options.strict) {
-      throw new Error("verify accepts only --format and --json options.");
-    }
-    if (options.format === "yaml") throw new Error("verify supports only text and json output.");
-  }
+  const spec = COMMAND_SPECS[command];
+  options[spec.inputTarget] = options.input;
+  spec.validate?.(options);
+  assertAllowedOptions(command, options, spec);
+  assertFormat(command, options, spec);
 
   return options;
 }
