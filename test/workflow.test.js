@@ -45,8 +45,25 @@ test("release-gate workflow composes review plans without secrets or execution",
   assert.doesNotMatch(workflow, /npm publish|gh release create|notarize|signtool|codesign/);
 });
 
+test("release evidence workflow verifies raw external results without secrets or execution", async () => {
+  const workflow = await readFile(new URL("../.github/workflows/release-verify.yml", import.meta.url), "utf8");
+  assert.match(workflow, /permissions:\n  actions: read\n  contents: read/);
+  assert.match(workflow, /persist-credentials: false/);
+  assert.match(workflow, /gh run download "\$\{\{ inputs\.source_run_id \}\}" --name "\$\{\{ inputs\.artifact_name \}\}"/);
+  assert.match(workflow, /gh run download "\$\{\{ inputs\.evidence_run_id \}\}" --name "\$\{\{ inputs\.evidence_artifact_name \}\}"/);
+  assert.match(workflow, /installermarker\.js release-verify/);
+  assert.match(workflow, /--smoke-result "\$RUNNER_TEMP\/installermarker-release-results\/smoke-result\.json"/);
+  assert.match(workflow, /--scan-result "\$RUNNER_TEMP\/installermarker-release-results\/scan-result\.json"/);
+  assert.match(workflow, /--sign-result "\$RUNNER_TEMP\/installermarker-release-results\/sign-result\.json"/);
+  assert.match(workflow, /release-verification\.json/);
+  assert.match(workflow, /release-verification-\$\{\{ github\.run_id \}\}/);
+  assert.doesNotMatch(workflow, /secrets\./);
+  assert.doesNotMatch(workflow, /--allow-unsafe-local-build/);
+  assert.doesNotMatch(workflow, /npm publish|gh release create|notarize|signtool|codesign/);
+});
+
 test("all third-party workflow actions are pinned to immutable commits", async () => {
-  const files = ["ci.yml", "materialize.yml", "build.yml", "release-gate.yml", "release.yml", "scorecard.yml", "codeql.yml"];
+  const files = ["ci.yml", "materialize.yml", "build.yml", "release-gate.yml", "release-verify.yml", "release.yml", "scorecard.yml", "codeql.yml"];
   for (const file of files) {
     const workflow = await readFile(new URL(`../.github/workflows/${file}`, import.meta.url), "utf8");
     const actions = [...workflow.matchAll(/^\s*(?:-\s+)?uses:\s+[^@\s]+@([^\s#]+)/gm)];
@@ -58,7 +75,7 @@ test("all third-party workflow actions are pinned to immutable commits", async (
 });
 
 test("workflow files parse as YAML and publish npm provenance", async () => {
-  const files = ["ci.yml", "materialize.yml", "build.yml", "release-gate.yml", "release.yml", "scorecard.yml", "codeql.yml"];
+  const files = ["ci.yml", "materialize.yml", "build.yml", "release-gate.yml", "release-verify.yml", "release.yml", "scorecard.yml", "codeql.yml"];
   for (const file of files) {
     const workflow = await readFile(new URL(`../.github/workflows/${file}`, import.meta.url), "utf8");
     assert.equal(parseDocument(workflow, { uniqueKeys: true }).errors.length, 0, `${file} is not valid YAML`);

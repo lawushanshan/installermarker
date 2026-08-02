@@ -1,0 +1,67 @@
+name: Release Evidence Verification
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: Workflow run ID that produced a verified artifact directory.
+        required: true
+        type: string
+      artifact_name:
+        description: Name of the workflow artifact containing artifacts.json or build-artifacts.json plus installers.
+        required: true
+        type: string
+      evidence_run_id:
+        description: Workflow run ID that produced raw smoke-result.json, scan-result.json, and sign-result.json.
+        required: true
+        type: string
+      evidence_artifact_name:
+        description: Name of the workflow artifact containing raw external result JSON files.
+        required: true
+        type: string
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  release-verify:
+    name: Verify final release evidence
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Download verified artifact directory
+        run: |
+          mkdir -p "$RUNNER_TEMP/installermarker-release-input"
+          gh run download "${{ inputs.source_run_id }}" --name "${{ inputs.artifact_name }}" --dir "$RUNNER_TEMP/installermarker-release-input"
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - name: Download raw external result files
+        run: |
+          mkdir -p "$RUNNER_TEMP/installermarker-release-results"
+          gh run download "${{ inputs.evidence_run_id }}" --name "${{ inputs.evidence_artifact_name }}" --dir "$RUNNER_TEMP/installermarker-release-results"
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - name: Verify release evidence
+        run: |
+          mkdir -p "$RUNNER_TEMP/installermarker-release-verification"
+          node ./bin/installermarker.js release-verify "$RUNNER_TEMP/installermarker-release-input" \
+            --smoke-result "$RUNNER_TEMP/installermarker-release-results/smoke-result.json" \
+            --scan-result "$RUNNER_TEMP/installermarker-release-results/scan-result.json" \
+            --sign-result "$RUNNER_TEMP/installermarker-release-results/sign-result.json" \
+            --json > "$RUNNER_TEMP/installermarker-release-verification/release-verification.json"
+      - name: Upload release verification
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-verification-${{ github.run_id }}
+          path: ${{ runner.temp }}/installermarker-release-verification
+          if-no-files-found: error
+          retention-days: 14
