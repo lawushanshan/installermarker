@@ -23,7 +23,7 @@ InstallerMarker 可以将经过审核的 Electron 和 Tauri 项目构建为原�
 
 执行 `installermarker validate recipe.json`，其中的源码构建状态必须为 `ready`。构建命令是安全边界，必须先针对该仓库和固定 commit 审核，不能直接把建议命令当作授权命令。
 
-使用 `build-native` 时，将 `build.strategy` 设为 `go-native`、`rust-native` 或 `python-native`，保留 `packaging: build-native`，并配置能在 `artifactDirectories` 中生成平台安装包的命令。Python 默认产物目录为 `dist` 和 `build`，但不会猜测入口或打包命令；审核人必须针对固定 commit 选择并审核 PyInstaller、Briefcase 或 Nuitka 等工具。Worker 刻意不替审核人选择打包器：Windows、macOS 和 Linux 的打包与签名要求不同。
+使用 `build-native` 时，将 `build.strategy` 设为 `go-native`、`rust-native` 或 `python-native`，保留 `packaging: build-native`，并配置能在 `artifactDirectories` 中生成平台安装包的命令。Python 默认产物目录为 `dist` 和 `build`，当它在标准清单中识别到 Briefcase、PyInstaller、Nuitka 或 cx_Freeze 时，可能会给出一个建议命令，但入口和最终命令仍然需要人工审核。审核人必须针对固定 commit 选择并审核该命令。Worker 刻意不替审核人选择打包器：Windows、macOS 和 Linux 的打包与签名要求不同。
 
 ## 本地执行
 

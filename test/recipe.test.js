@@ -58,6 +58,19 @@ test("creates source-build targets for detected Electron projects", () => {
   assert.equal(recipe.build.suggestedCommand, "npm ci && npm run dist");
 });
 
+test("creates Python recipes with suggested packager commands when available", () => {
+  const report = {
+    source: { url: "https://github.com/acme/widget", defaultBranch: "main", commitSha: "a".repeat(40) },
+    application: { name: "widget" },
+    analysis: { project: { kind: "python", strategy: "python-native", artifactDirectories: ["dist", "build"], suggestedBuildCommand: "python -m pip install briefcase && briefcase build" } },
+    targets: [{ id: "linux-x64", status: "likely", artifact: null }]
+  };
+  const recipe = createRecipe(report);
+  assert.equal(recipe.build.strategy, "python-native");
+  assert.equal(recipe.build.suggestedCommand, "python -m pip install briefcase && briefcase build");
+  assert.equal(recipe.review.some((item) => item.includes("Review the suggested build command")), true);
+});
+
 test("creates native-build targets for detected Go, Rust, and Python projects", () => {
   for (const kind of ["go", "rust", "python"]) {
     const report = {

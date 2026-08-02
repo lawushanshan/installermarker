@@ -104,7 +104,7 @@ GITHUB_TOKEN=github_pat_xxx installermarker https://github.com/owner/repository 
 使用 `publish-verify <产物目录> --release-verification <release-verification.json> --release-tag <tag> --result <publish-result.json>` 可以在受保护发布服务返回原始发布结果后进行校验。它会在本地重建发布计划，并检查来源、清单、发布标签、草稿状态、Release URL、资产文件名、资产类型、SHA-256 哈希和汇总结论，但不会访问 GitHub Releases，也不会发布任何内容。
 使用 `gate-verify <发布门禁目录>` 可以校验 CI 生成的发布门禁 JSON 包。它会检查 `verify.json`、`sbom.json`、`smoke-plan.json`、`scan-plan.json`、`sign-plan.json` 和 `release-plan.json` 是否存在且内部事实一致。
 
-对于尚未发布安装包的 Electron 和 Tauri 项目，请审核生成的源码构建配方、填写经过审核的 `build.command`，然后分别在原生目标系统上构建。Go、Rust 和 Python 项目会生成 `build-native` 目标：需先选择并审核原生打包命令与产物目录。Python 默认使用 `dist` 和 `build` 作为候选目录，但入口和打包器仍必须人工确认。Worker 只接受 Windows `.msi/.exe`、macOS `.dmg/.pkg` 和 Linux `.AppImage/.deb/.rpm` 包。如果已审核构建命令在配置的产物目录中输出了常见 SPDX 或 CycloneDX SBOM 文档，Worker 会复制并哈希记录为构建 SBOM 证据；它不会自行生成这些文档。详见[源码构建说明](docs/source-build.zh-CN.md)。
+对于尚未发布安装包的 Electron 和 Tauri 项目，请审核生成的源码构建配方、填写经过审核的 `build.command`，然后分别在原生目标系统上构建。Go、Rust 和 Python 项目会生成 `build-native` 目标：需先选择并审核原生打包命令与产物目录。Python 默认使用 `dist` 和 `build` 作为候选目录，当清单里识别到 Briefcase、PyInstaller、Nuitka 或 cx_Freeze 时，也可能给出建议命令，但入口和最终命令仍必须人工确认。Worker 只接受 Windows `.msi/.exe`、macOS `.dmg/.pkg` 和 Linux `.AppImage/.deb/.rpm` 包。如果已审核构建命令在配置的产物目录中输出了常见 SPDX 或 CycloneDX SBOM 文档，Worker 会复制并哈希记录为构建 SBOM 证据；它不会自行生成这些文档。详见[源码构建说明](docs/source-build.zh-CN.md)。
 
 ## 项目发布与维护
 

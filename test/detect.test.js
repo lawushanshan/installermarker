@@ -17,6 +17,39 @@ test("detects Python projects as reviewed native-build candidates", () => {
   assert.deepEqual(classifyTargets([], project).map((target) => target.status), ["likely", "likely", "likely"]);
 });
 
+test("suggests Python packagers when manifests already name one", async (t) => {
+  const cases = [
+    {
+      name: "briefcase in pyproject",
+      files: [{ path: "pyproject.toml", content: "[project]\nname = 'widget'\ndependencies = ['briefcase']\n" }],
+      command: "python -m pip install briefcase && briefcase build"
+    },
+    {
+      name: "pyinstaller in requirements",
+      files: [{ path: "requirements.txt", content: "PyInstaller==6.16.0\n" }],
+      command: "python -m pip install pyinstaller && pyinstaller TODO: confirm executable entrypoint"
+    },
+    {
+      name: "nuitka in setup.py",
+      files: [{ path: "setup.py", content: "install_requires=['Nuitka']\n" }],
+      command: "python -m pip install nuitka && python -m nuitka --standalone TODO: confirm executable entrypoint"
+    },
+    {
+      name: "cx_Freeze in pyproject",
+      files: [{ path: "pyproject.toml", content: "[project]\nname = 'widget'\ndependencies = ['Cx_Freeze']\n" }],
+      command: "python -m pip install cx_Freeze && python setup.py build"
+    }
+  ];
+
+  for (const { name, files, command } of cases) {
+    await t.test(name, () => {
+      const project = detectProject(files);
+      assert.equal(project.kind, "python");
+      assert.equal(project.suggestedBuildCommand, command);
+    });
+  }
+});
+
 test("release assets override inferred target support", () => {
   const targets = classifyTargets([{ name: "widget-1.0.0-win-x64.msi" }, { name: "widget-1.0.0-macos.dmg" }, { name: "widget-1.0.0.AppImage" }], { kind: "unknown" });
   assert.deepEqual(targets.map((target) => target.status), ["available", "available", "available"]);

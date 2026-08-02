@@ -48,6 +48,41 @@ function packageJsonDetails(content) {
   }
 }
 
+function pythonDetails(contents) {
+  const text = contents.join("\n").toLowerCase();
+  const base = {
+    kind: "python",
+    strategy: "python-native",
+    evidence: "Python project manifest found",
+    artifactDirectories: ["dist", "build"]
+  };
+  if (/\bbriefcase\b/.test(text)) {
+    return {
+      ...base,
+      suggestedBuildCommand: "python -m pip install briefcase && briefcase build"
+    };
+  }
+  if (/\bpyinstaller\b/.test(text)) {
+    return {
+      ...base,
+      suggestedBuildCommand: "python -m pip install pyinstaller && pyinstaller TODO: confirm executable entrypoint"
+    };
+  }
+  if (/\bnuitka\b/.test(text)) {
+    return {
+      ...base,
+      suggestedBuildCommand: "python -m pip install nuitka && python -m nuitka --standalone TODO: confirm executable entrypoint"
+    };
+  }
+  if (/\bcx[_-]?freeze\b/.test(text)) {
+    return {
+      ...base,
+      suggestedBuildCommand: "python -m pip install cx_Freeze && python setup.py build"
+    };
+  }
+  return base;
+}
+
 export function detectProject(files) {
   const paths = new Set(files.map((file) => file.path));
   const file = (path) => files.find((item) => item.path === path);
@@ -68,12 +103,11 @@ export function detectProject(files) {
   if (paths.has("go.mod")) return { kind: "go", strategy: "go-native", evidence: "go.mod found" };
   if (paths.has("Cargo.toml")) return { kind: "rust", strategy: "rust-native", evidence: "Cargo.toml found" };
   if (paths.has("pyproject.toml") || paths.has("requirements.txt") || paths.has("setup.py")) {
-    return {
-      kind: "python",
-      strategy: "python-native",
-      evidence: "Python project manifest found",
-      artifactDirectories: ["dist", "build"]
-    };
+    return pythonDetails([
+      file("pyproject.toml")?.content ?? "",
+      file("requirements.txt")?.content ?? "",
+      file("setup.py")?.content ?? ""
+    ]);
   }
   if (paths.has("pom.xml") || paths.has("build.gradle") || paths.has("build.gradle.kts")) {
     return { kind: "java", strategy: "java-runtime", evidence: "Java build manifest found" };
