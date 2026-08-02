@@ -1,8 +1,16 @@
+import Ajv2020 from "ajv/dist/2020.js";
+import addFormats from "ajv-formats";
+import { readFile } from "node:fs/promises";
 import { actualSummary, addCheck } from "./result-verification.js";
 import { verifyScanResult } from "./scan-result.js";
 import { verifySignResult } from "./sign-result.js";
 import { createArtifactSbom } from "./sbom.js";
 import { verifySmokeResult } from "./smoke-result.js";
+
+const schema = JSON.parse(await readFile(new URL("../schema/release-verification.schema.json", import.meta.url), "utf8"));
+const ajv = new Ajv2020({ allErrors: true, strict: true });
+addFormats(ajv);
+const validateReleaseVerification = ajv.compile(schema);
 
 function gate(name, passed, summary) {
   return { name, status: passed ? "passed" : "failed", summary };
@@ -11,6 +19,20 @@ function gate(name, passed, summary) {
 function countSummary(results) {
   const summary = actualSummary(results);
   return `${summary.passed} passed, ${summary.failed} failed, ${summary.inconclusive} inconclusive`;
+}
+
+export async function readReleaseVerification(path) {
+  let result;
+  try {
+    result = JSON.parse(await readFile(path, "utf8"));
+  } catch (error) {
+    throw new Error(`Release verification must be valid JSON: ${error.message}`);
+  }
+  if (!validateReleaseVerification(result)) {
+    const error = validateReleaseVerification.errors[0];
+    throw new Error(`Release verification is invalid at ${error.instancePath || "/"}: ${error.message}`);
+  }
+  return result;
 }
 
 export function verifyReleaseEvidence(verification, { smokeResult, scanResult, signResult }, { generatedAt = new Date().toISOString() } = {}) {

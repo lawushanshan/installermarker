@@ -31,4 +31,6 @@ installermarker verify artifacts/linux --format json
 
 在外部 smoke、扫描和签名服务返回原始结果文件后，可以使用 `installermarker release-verify artifacts/linux --smoke-result smoke-result.json --scan-result scan-result.json --sign-result sign-result.json --format json`。该命令会重新验证本地产物目录，在本地重新运行三类结果校验器，并输出一份最终发布证据报告。它不信任预先生成的校验报告，也仍然不会执行产物、调用扫描器、签名产物、执行公证或发布 Release。
 
+最终发布证据通过后，可以使用 `installermarker publish-plan artifacts/linux --release-verification release-verification.json --release-tag v1.0.0 --format json`。该命令会校验最终证据与已验证产物目录一致，并输出草稿 Release 资产检查清单。它不会上传产物、创建 Release、发布包、签名产物、执行公证或访问外部服务。
+
 使用 `installermarker gate-verify release-gate-plans --format json` 可以校验 CI 生成的发布门禁包。它会检查独立 JSON 文件以及 `release-plan.json` 内嵌计划是否都与 `verify.json` 记录的事实一致。

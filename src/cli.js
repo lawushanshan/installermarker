@@ -2,8 +2,9 @@ const PROJECTION_COMMANDS = new Set(["sbom", "smoke-plan", "sign-plan", "scan-pl
 const GATE_COMMANDS = new Set(["gate-verify"]);
 const RESULT_COMMANDS = new Set(["scan-verify", "smoke-verify", "sign-verify"]);
 const RELEASE_VERIFY_COMMANDS = new Set(["release-verify"]);
+const PUBLISH_PLAN_COMMANDS = new Set(["publish-plan"]);
 const ARTIFACT_DIRECTORY_COMMANDS = new Set(["verify", ...PROJECTION_COMMANDS]);
-const COMMANDS = new Set(["inspect", "materialize", "validate", "build", ...ARTIFACT_DIRECTORY_COMMANDS, ...GATE_COMMANDS, ...RESULT_COMMANDS, ...RELEASE_VERIFY_COMMANDS]);
+const COMMANDS = new Set(["inspect", "materialize", "validate", "build", ...ARTIFACT_DIRECTORY_COMMANDS, ...GATE_COMMANDS, ...RESULT_COMMANDS, ...RELEASE_VERIFY_COMMANDS, ...PUBLISH_PLAN_COMMANDS]);
 
 export function parseArguments(argumentsList) {
   const args = [...argumentsList];
@@ -56,6 +57,12 @@ export function parseArguments(argumentsList) {
     } else if (argument === "--sign-result") {
       options.signResultFile = valueAfter(index, argument);
       index += 1;
+    } else if (argument === "--release-verification") {
+      options.releaseVerificationFile = valueAfter(index, argument);
+      index += 1;
+    } else if (argument === "--release-tag") {
+      options.releaseTag = valueAfter(index, argument);
+      index += 1;
     } else if (argument === "--output" || argument === "-o") {
       options.output = valueAfter(index, argument);
       index += 1;
@@ -76,61 +83,68 @@ export function parseArguments(argumentsList) {
   }
 
   if (!options.help && !options.version && !options.input) {
-    throw new Error(command === "inspect" ? "A GitHub repository URL is required." : GATE_COMMANDS.has(command) ? "A release gate directory is required." : ARTIFACT_DIRECTORY_COMMANDS.has(command) || RESULT_COMMANDS.has(command) || RELEASE_VERIFY_COMMANDS.has(command) ? "An artifact directory is required." : "A JSON or YAML recipe file is required.");
+    throw new Error(command === "inspect" ? "A GitHub repository URL is required." : GATE_COMMANDS.has(command) ? "A release gate directory is required." : ARTIFACT_DIRECTORY_COMMANDS.has(command) || RESULT_COMMANDS.has(command) || RELEASE_VERIFY_COMMANDS.has(command) || PUBLISH_PLAN_COMMANDS.has(command) ? "An artifact directory is required." : "A JSON or YAML recipe file is required.");
   }
   if (!["text", "json", "yaml"].includes(options.format)) throw new Error("--format must be text, json, or yaml.");
 
   if (command === "inspect") {
     options.url = options.input;
-    if (options.outputDir || options.dryRun || options.workspace || options.recipeRoot || options.targetPlatform || options.allowUnsafeLocalBuild || options.resultFile || options.smokeResultFile || options.scanResultFile || options.signResultFile) throw new Error("Build, materialize, and result options are not valid for inspect.");
+    if (options.outputDir || options.dryRun || options.workspace || options.recipeRoot || options.targetPlatform || options.allowUnsafeLocalBuild || options.resultFile || options.smokeResultFile || options.scanResultFile || options.signResultFile || options.releaseVerificationFile || options.releaseTag) throw new Error("Build, materialize, result, and publish options are not valid for inspect.");
   } else if (command === "materialize") {
     options.recipeFile = options.input;
     if (!options.help && !options.dryRun && !options.outputDir) throw new Error("materialize requires --output-dir unless --dry-run is used.");
-    if (options.recipe || options.output || options.force || options.strict || options.workspace || options.allowUnsafeLocalBuild || options.resultFile || options.smokeResultFile || options.scanResultFile || options.signResultFile || options.format !== "text" || options.token) {
+    if (options.recipe || options.output || options.force || options.strict || options.workspace || options.allowUnsafeLocalBuild || options.resultFile || options.smokeResultFile || options.scanResultFile || options.signResultFile || options.releaseVerificationFile || options.releaseTag || options.format !== "text" || options.token) {
       throw new Error("materialize accepts only --output-dir, --target, and --dry-run options.");
     }
   } else if (command === "build") {
     options.recipeFile = options.input;
     if (!options.help && !options.targetPlatform) throw new Error("build requires --target.");
     if (!options.help && !options.dryRun && (!options.workspace || !options.outputDir)) throw new Error("build requires --workspace and --output-dir unless --dry-run is used.");
-    if (options.recipe || options.output || options.force || options.strict || options.resultFile || options.smokeResultFile || options.scanResultFile || options.signResultFile || options.format !== "text" || options.token) {
+    if (options.recipe || options.output || options.force || options.strict || options.resultFile || options.smokeResultFile || options.scanResultFile || options.signResultFile || options.releaseVerificationFile || options.releaseTag || options.format !== "text" || options.token) {
       throw new Error("build accepts only --target, --workspace, --output-dir, --dry-run, and --allow-unsafe-local-build options.");
     }
   } else if (command === "validate") {
     options.recipeFile = options.input;
-    if (options.recipe || options.output || options.force || options.dryRun || options.outputDir || options.workspace || options.targetPlatform || options.allowUnsafeLocalBuild || options.resultFile || options.smokeResultFile || options.scanResultFile || options.signResultFile || options.token) {
+    if (options.recipe || options.output || options.force || options.dryRun || options.outputDir || options.workspace || options.targetPlatform || options.allowUnsafeLocalBuild || options.resultFile || options.smokeResultFile || options.scanResultFile || options.signResultFile || options.releaseVerificationFile || options.releaseTag || options.token) {
       throw new Error("validate accepts only --format, --json, and --strict options.");
     }
     if (options.format === "yaml") throw new Error("validate supports only text and json output.");
   } else if (PROJECTION_COMMANDS.has(command)) {
     options.artifactDirectory = options.input;
-    if (options.recipe || options.output || options.force || options.dryRun || options.outputDir || options.workspace || options.recipeRoot || options.targetPlatform || options.allowUnsafeLocalBuild || options.resultFile || options.smokeResultFile || options.scanResultFile || options.signResultFile || options.token || options.strict) {
+    if (options.recipe || options.output || options.force || options.dryRun || options.outputDir || options.workspace || options.recipeRoot || options.targetPlatform || options.allowUnsafeLocalBuild || options.resultFile || options.smokeResultFile || options.scanResultFile || options.signResultFile || options.releaseVerificationFile || options.releaseTag || options.token || options.strict) {
       throw new Error(`${command} accepts only --format and --json options.`);
     }
     if (options.format === "yaml") throw new Error(`${command} supports only text and json output.`);
   } else if (GATE_COMMANDS.has(command)) {
     options.gateDirectory = options.input;
-    if (options.recipe || options.output || options.force || options.dryRun || options.outputDir || options.workspace || options.recipeRoot || options.targetPlatform || options.allowUnsafeLocalBuild || options.resultFile || options.smokeResultFile || options.scanResultFile || options.signResultFile || options.token || options.strict) {
+    if (options.recipe || options.output || options.force || options.dryRun || options.outputDir || options.workspace || options.recipeRoot || options.targetPlatform || options.allowUnsafeLocalBuild || options.resultFile || options.smokeResultFile || options.scanResultFile || options.signResultFile || options.releaseVerificationFile || options.releaseTag || options.token || options.strict) {
       throw new Error(`${command} accepts only --format and --json options.`);
     }
     if (options.format === "yaml") throw new Error(`${command} supports only text and json output.`);
   } else if (RESULT_COMMANDS.has(command)) {
     options.artifactDirectory = options.input;
     if (!options.help && !options.resultFile) throw new Error(`${command} requires --result.`);
-    if (options.recipe || options.output || options.force || options.dryRun || options.outputDir || options.workspace || options.recipeRoot || options.targetPlatform || options.allowUnsafeLocalBuild || options.smokeResultFile || options.scanResultFile || options.signResultFile || options.token || options.strict) {
+    if (options.recipe || options.output || options.force || options.dryRun || options.outputDir || options.workspace || options.recipeRoot || options.targetPlatform || options.allowUnsafeLocalBuild || options.smokeResultFile || options.scanResultFile || options.signResultFile || options.releaseVerificationFile || options.releaseTag || options.token || options.strict) {
       throw new Error(`${command} accepts only --result, --format, and --json options.`);
     }
     if (options.format === "yaml") throw new Error(`${command} supports only text and json output.`);
   } else if (RELEASE_VERIFY_COMMANDS.has(command)) {
     options.artifactDirectory = options.input;
     if (!options.help && (!options.smokeResultFile || !options.scanResultFile || !options.signResultFile)) throw new Error(`${command} requires --smoke-result, --scan-result, and --sign-result.`);
-    if (options.recipe || options.output || options.force || options.dryRun || options.outputDir || options.workspace || options.recipeRoot || options.targetPlatform || options.allowUnsafeLocalBuild || options.resultFile || options.token || options.strict) {
+    if (options.recipe || options.output || options.force || options.dryRun || options.outputDir || options.workspace || options.recipeRoot || options.targetPlatform || options.allowUnsafeLocalBuild || options.resultFile || options.releaseVerificationFile || options.releaseTag || options.token || options.strict) {
       throw new Error(`${command} accepts only --smoke-result, --scan-result, --sign-result, --format, and --json options.`);
+    }
+    if (options.format === "yaml") throw new Error(`${command} supports only text and json output.`);
+  } else if (PUBLISH_PLAN_COMMANDS.has(command)) {
+    options.artifactDirectory = options.input;
+    if (!options.help && (!options.releaseVerificationFile || !options.releaseTag)) throw new Error(`${command} requires --release-verification and --release-tag.`);
+    if (options.recipe || options.output || options.force || options.dryRun || options.outputDir || options.workspace || options.recipeRoot || options.targetPlatform || options.allowUnsafeLocalBuild || options.resultFile || options.smokeResultFile || options.scanResultFile || options.signResultFile || options.token || options.strict) {
+      throw new Error(`${command} accepts only --release-verification, --release-tag, --format, and --json options.`);
     }
     if (options.format === "yaml") throw new Error(`${command} supports only text and json output.`);
   } else {
     options.artifactDirectory = options.input;
-    if (options.recipe || options.output || options.force || options.dryRun || options.outputDir || options.workspace || options.recipeRoot || options.targetPlatform || options.allowUnsafeLocalBuild || options.resultFile || options.smokeResultFile || options.scanResultFile || options.signResultFile || options.token || options.strict) {
+    if (options.recipe || options.output || options.force || options.dryRun || options.outputDir || options.workspace || options.recipeRoot || options.targetPlatform || options.allowUnsafeLocalBuild || options.resultFile || options.smokeResultFile || options.scanResultFile || options.signResultFile || options.releaseVerificationFile || options.releaseTag || options.token || options.strict) {
       throw new Error("verify accepts only --format and --json options.");
     }
     if (options.format === "yaml") throw new Error("verify supports only text and json output.");
@@ -154,6 +168,7 @@ export function usage() {
   installermarker scan-verify <artifact-directory> --result <scan-result.json> [--format text|json]
   installermarker release-plan <artifact-directory> [--format text|json]
   installermarker release-verify <artifact-directory> --smoke-result <smoke-result.json> --scan-result <scan-result.json> --sign-result <sign-result.json> [--format text|json]
+  installermarker publish-plan <artifact-directory> --release-verification <release-verification.json> --release-tag <tag> [--format text|json]
   installermarker gate-verify <release-gate-directory> [--format text|json]
   installermarker verify <artifact-directory> [--format text|json]
 
