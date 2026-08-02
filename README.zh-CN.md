@@ -52,6 +52,7 @@ installermarker sbom artifacts/v1 --format json > sbom.json
 installermarker smoke-plan artifacts/v1 --format json > smoke-plan.json
 installermarker smoke-verify artifacts/v1 --result smoke-result.json --format json > smoke-verification.json
 installermarker sign-plan artifacts/v1 --format json > sign-plan.json
+installermarker sign-verify artifacts/v1 --result sign-result.json --format json > sign-verification.json
 installermarker scan-plan artifacts/v1 --format json > scan-plan.json
 installermarker scan-verify artifacts/v1 --result scan-result.json --format json > scan-verification.json
 installermarker release-plan artifacts/v1 --format json > release-plan.json
@@ -91,6 +92,7 @@ GITHUB_TOKEN=github_pat_xxx installermarker https://github.com/owner/repository 
 使用 `smoke-plan <产物目录>` 可以为每个已验证安装包生成只读的安装、启动和卸载检查计划。它不会执行计划，也不会运行安装器。
 使用 `smoke-verify <产物目录> --result <smoke-result.json>` 可以把外部隔离 smoke runner 返回的结果与已验证产物目录及生成的 smoke 计划进行校验。它会检查源、清单、产物哈希、安装器类型、目标宿主、步骤名称、步骤状态和汇总结论，但不会安装、启动、卸载或执行任何产物。
 使用 `sign-plan <产物目录>` 可以为独立受保护的签名服务生成只读签名请求计划。它不会访问证书、签名产物、执行公证或发布 Release。
+使用 `sign-verify <产物目录> --result <sign-result.json>` 可以把外部受保护签名服务返回的结果与已验证产物目录及生成的签名计划进行校验。它会检查源、清单、产物哈希、签名 profile、阶段名称、阶段状态和汇总结论，但不会访问凭据、签名产物、执行公证或发布 Release。
 使用 `scan-plan <产物目录>` 可以生成只读的恶意软件、信誉和 SBOM 关联扫描请求计划。它不会执行扫描器、上传产物或访问信誉服务。
 使用 `scan-verify <产物目录> --result <scan-result.json>` 可以把外部批准扫描器返回的结果与已验证产物目录进行校验。它会检查源、清单、产物哈希、阶段状态和汇总结论，但不会调用扫描器或上传产物。
 使用 `release-plan <产物目录>` 可以生成单个只读发布门禁计划，汇总验证证据、SBOM、冒烟测试计划、扫描计划和签名计划。它不会执行产物、运行冒烟测试、调用扫描器、签名产物、执行公证或发布 Release。
@@ -117,7 +119,7 @@ git push -u origin main
 
 ## 范围与路线图
 
-0.2 版本包含静态分析、固定 commit 的配方生成、已有安装包的校验落盘、已验证产物目录的只读 SBOM 投影、只读 smoke-test 计划生成、外部隔离 smoke 结果校验、只读签名请求计划、只读产物扫描请求计划、外部批准扫描器结果校验、只读发布门禁计划、发布门禁包一致性校验，以及带构建 provenance 和构建产出 SBOM 证据采集的 Electron/Tauri、Go、Rust、Python 源码构建路径。下一阶段将增加约定式打包适配器、更完整的构建期依赖 SBOM 生成、隔离的 smoke-test 执行集成、批准扫描器执行集成，以及受保护的签名服务。
+0.2 版本包含静态分析、固定 commit 的配方生成、已有安装包的校验落盘、已验证产物目录的只读 SBOM 投影、只读 smoke-test 计划生成、外部隔离 smoke 结果校验、只读签名请求计划、外部受保护签名结果校验、只读产物扫描请求计划、外部批准扫描器结果校验、只读发布门禁计划、发布门禁包一致性校验，以及带构建 provenance 和构建产出 SBOM 证据采集的 Electron/Tauri、Go、Rust、Python 源码构建路径。下一阶段将增加约定式打包适配器、更完整的构建期依赖 SBOM 生成、隔离的 smoke-test 执行集成、批准扫描器执行集成，以及受保护的签名服务。
 
 Windows Authenticode 证书，以及 macOS Developer ID 和公证凭据，绝不能暴露给仓库的构建脚本。
 

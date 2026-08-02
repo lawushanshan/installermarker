@@ -19,6 +19,8 @@ Use `installermarker smoke-verify artifacts/linux --result smoke-result.json --f
 
 Use `installermarker sign-plan artifacts/linux --format json` to generate plan-only signing requests for a protected signing service. It records the expected signing profile and stages, but never accesses credentials or invokes signing tools.
 
+Use `installermarker sign-verify artifacts/linux --result sign-result.json --format json` after a protected signing service returns a result file. The command re-verifies the local artifact directory, validates the signing-result contract, and checks that the signer's source, manifest, artifact hashes, signing profiles, stage names, stage statuses, and summary verdicts match the generated signing plan. It does not access credentials, sign artifacts, notarize packages, or publish releases.
+
 Use `installermarker scan-plan artifacts/linux --format json` to generate plan-only malware, reputation, and SBOM-correlation scan requests. It records what should be scanned later, but does not upload artifacts or invoke scanners.
 
 Use `installermarker scan-verify artifacts/linux --result scan-result.json --format json` after a separately approved scanner returns a result file. The command re-verifies the local artifact directory, validates the scanner-result contract, and checks that the scanner's source, manifest, artifact hashes, stage statuses, and summary verdicts match the verified artifacts. It does not upload artifacts or invoke scanners.

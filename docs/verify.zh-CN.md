@@ -21,6 +21,8 @@ installermarker verify artifacts/linux --format json
 
 使用 `installermarker sign-plan artifacts/linux --format json` 可以为受保护签名服务生成只读签名请求。它会记录预期签名 profile 和阶段，但不会访问凭据，也不会调用签名工具。
 
+在受保护签名服务返回结果文件后，可以使用 `installermarker sign-verify artifacts/linux --result sign-result.json --format json`。该命令会重新验证本地产物目录，校验签名结果契约，并检查 signer 记录的源、清单、产物哈希、签名 profile、阶段名称、阶段状态和汇总结论是否与生成的签名计划一致。它不会访问凭据、签名产物、执行公证或发布 Release。
+
 使用 `installermarker scan-plan artifacts/linux --format json` 可以生成只读的恶意软件、信誉和 SBOM 关联扫描请求。它只记录后续应该扫描什么，不会上传产物，也不会调用扫描器。
 
 在独立批准的扫描器返回结果文件后，可以使用 `installermarker scan-verify artifacts/linux --result scan-result.json --format json`。该命令会重新验证本地产物目录，校验扫描结果契约，并检查扫描器记录的源、清单、产物哈希、阶段状态和汇总结论是否与已验证产物一致。它不会上传产物，也不会调用扫描器。

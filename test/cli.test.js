@@ -93,6 +93,18 @@ test("parses signing plan commands", () => {
   assert.equal(options.format, "json");
 });
 
+test("parses signing verification commands", () => {
+  const options = parseArguments(["sign-verify", "artifacts", "--result", "sign-result.json", "--json"]);
+  assert.equal(options.command, "sign-verify");
+  assert.equal(options.artifactDirectory, "artifacts");
+  assert.equal(options.resultFile, "sign-result.json");
+  assert.equal(options.format, "json");
+});
+
+test("requires a signing result for signing verification", () => {
+  assert.throws(() => parseArguments(["sign-verify", "artifacts"]), /requires --result/);
+});
+
 test("parses artifact scan plan commands", () => {
   const options = parseArguments(["scan-plan", "artifacts", "--json"]);
   assert.equal(options.command, "scan-plan");

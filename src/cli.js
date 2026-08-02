@@ -1,6 +1,6 @@
 const PROJECTION_COMMANDS = new Set(["sbom", "smoke-plan", "sign-plan", "scan-plan", "release-plan"]);
 const GATE_COMMANDS = new Set(["gate-verify"]);
-const RESULT_COMMANDS = new Set(["scan-verify", "smoke-verify"]);
+const RESULT_COMMANDS = new Set(["scan-verify", "smoke-verify", "sign-verify"]);
 const ARTIFACT_DIRECTORY_COMMANDS = new Set(["verify", ...PROJECTION_COMMANDS]);
 const COMMANDS = new Set(["inspect", "materialize", "validate", "build", ...ARTIFACT_DIRECTORY_COMMANDS, ...GATE_COMMANDS, ...RESULT_COMMANDS]);
 
@@ -132,6 +132,7 @@ export function usage() {
   installermarker smoke-plan <artifact-directory> [--format text|json]
   installermarker smoke-verify <artifact-directory> --result <smoke-result.json> [--format text|json]
   installermarker sign-plan <artifact-directory> [--format text|json]
+  installermarker sign-verify <artifact-directory> --result <sign-result.json> [--format text|json]
   installermarker scan-plan <artifact-directory> [--format text|json]
   installermarker scan-verify <artifact-directory> --result <scan-result.json> [--format text|json]
   installermarker release-plan <artifact-directory> [--format text|json]
