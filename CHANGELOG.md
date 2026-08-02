@@ -17,6 +17,7 @@ All notable changes to InstallerMarker are documented here. Versions follow Sema
 - Added a no-secret GitHub Actions workflow that generates `publish-plan.json` from verified installer artifacts and final release evidence.
 - Publish plans now include SHA-256 hashes for required supplemental evidence files, including the artifact manifest and final release verification report.
 - Added `publish-verify` for validating raw protected-release-service publication results against the generated publish plan without contacting release services.
+- Added a no-secret GitHub Actions workflow that runs `publish-verify` and uploads `publish-verification.json`.
 - Shared artifact-manifest projection helpers across read-only plan commands.
 
 ## 0.2.8 - 2026-08-01

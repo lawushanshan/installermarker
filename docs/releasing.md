@@ -27,3 +27,5 @@ installermarker publish-verify artifacts/linux --release-verification release-ve
 ```
 
 The verifier rebuilds the publish plan locally and checks the protected service's reported release tag, draft state, URL, asset names, asset types, hashes, and summary verdicts. It does not query GitHub Releases or publish anything.
+
+For repository-managed verification, `.github/workflows/publish-verify.yml` performs the same check from three uploaded GitHub Actions artifacts: the verified artifact directory, `release-verification.json`, and `publish-result.json`. It uploads `publish-verification.json` as a short-lived artifact and still has no release-service authority.

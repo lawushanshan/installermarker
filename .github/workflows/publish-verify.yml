@@ -1,0 +1,93 @@
+name: Installer Artifact Publish Verification
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: Workflow run ID that produced a verified artifact directory.
+        required: true
+        type: string
+      artifact_name:
+        description: Name of the workflow artifact containing artifacts.json or build-artifacts.json plus installers.
+        required: true
+        type: string
+      verification_run_id:
+        description: Workflow run ID that produced release-verification.json.
+        required: true
+        type: string
+      verification_artifact_name:
+        description: Name of the workflow artifact containing release-verification.json.
+        required: true
+        type: string
+      result_run_id:
+        description: Workflow run ID that produced publish-result.json.
+        required: true
+        type: string
+      result_artifact_name:
+        description: Name of the workflow artifact containing publish-result.json.
+        required: true
+        type: string
+      release_tag:
+        description: Expected release tag to verify, such as v1.0.0.
+        required: true
+        type: string
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  publish-verify:
+    name: Verify protected publish result
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Download verified artifact directory
+        run: |
+          mkdir -p "$RUNNER_TEMP/installermarker-publish-verify-input"
+          gh run download "$SOURCE_RUN_ID" --name "$SOURCE_ARTIFACT_NAME" --dir "$RUNNER_TEMP/installermarker-publish-verify-input"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SOURCE_RUN_ID: ${{ inputs.source_run_id }}
+          SOURCE_ARTIFACT_NAME: ${{ inputs.artifact_name }}
+      - name: Download release verification
+        run: |
+          mkdir -p "$RUNNER_TEMP/installermarker-publish-verify-evidence"
+          gh run download "$VERIFICATION_RUN_ID" --name "$VERIFICATION_ARTIFACT_NAME" --dir "$RUNNER_TEMP/installermarker-publish-verify-evidence"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERIFICATION_RUN_ID: ${{ inputs.verification_run_id }}
+          VERIFICATION_ARTIFACT_NAME: ${{ inputs.verification_artifact_name }}
+      - name: Download publish result
+        run: |
+          mkdir -p "$RUNNER_TEMP/installermarker-publish-verify-result"
+          gh run download "$RESULT_RUN_ID" --name "$RESULT_ARTIFACT_NAME" --dir "$RUNNER_TEMP/installermarker-publish-verify-result"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RESULT_RUN_ID: ${{ inputs.result_run_id }}
+          RESULT_ARTIFACT_NAME: ${{ inputs.result_artifact_name }}
+      - name: Verify publish result
+        run: |
+          mkdir -p "$RUNNER_TEMP/installermarker-publish-verification"
+          node ./bin/installermarker.js publish-verify "$RUNNER_TEMP/installermarker-publish-verify-input" \
+            --release-verification "$RUNNER_TEMP/installermarker-publish-verify-evidence/release-verification.json" \
+            --release-tag "$RELEASE_TAG" \
+            --result "$RUNNER_TEMP/installermarker-publish-verify-result/publish-result.json" \
+            --json > "$RUNNER_TEMP/installermarker-publish-verification/publish-verification.json"
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag }}
+      - name: Upload publish verification
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: publish-verification-${{ github.run_id }}
+          path: ${{ runner.temp }}/installermarker-publish-verification
+          if-no-files-found: error
+          retention-days: 14

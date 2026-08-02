@@ -83,8 +83,33 @@ test("publish plan workflow generates draft asset plans without publishing", asy
   assert.doesNotMatch(workflow, /npm publish|gh release create|notarize|signtool|codesign/);
 });
 
+test("publish verification workflow validates protected publish results without publishing", async () => {
+  const workflow = await readFile(new URL("../.github/workflows/publish-verify.yml", import.meta.url), "utf8");
+  assert.match(workflow, /permissions:\n  actions: read\n  contents: read/);
+  assert.match(workflow, /persist-credentials: false/);
+  assert.match(workflow, /SOURCE_RUN_ID: \$\{\{ inputs\.source_run_id \}\}/);
+  assert.match(workflow, /SOURCE_ARTIFACT_NAME: \$\{\{ inputs\.artifact_name \}\}/);
+  assert.match(workflow, /VERIFICATION_RUN_ID: \$\{\{ inputs\.verification_run_id \}\}/);
+  assert.match(workflow, /VERIFICATION_ARTIFACT_NAME: \$\{\{ inputs\.verification_artifact_name \}\}/);
+  assert.match(workflow, /RESULT_RUN_ID: \$\{\{ inputs\.result_run_id \}\}/);
+  assert.match(workflow, /RESULT_ARTIFACT_NAME: \$\{\{ inputs\.result_artifact_name \}\}/);
+  assert.match(workflow, /RELEASE_TAG: \$\{\{ inputs\.release_tag \}\}/);
+  assert.match(workflow, /gh run download "\$SOURCE_RUN_ID" --name "\$SOURCE_ARTIFACT_NAME"/);
+  assert.match(workflow, /gh run download "\$VERIFICATION_RUN_ID" --name "\$VERIFICATION_ARTIFACT_NAME"/);
+  assert.match(workflow, /gh run download "\$RESULT_RUN_ID" --name "\$RESULT_ARTIFACT_NAME"/);
+  assert.match(workflow, /installermarker\.js publish-verify/);
+  assert.match(workflow, /--release-verification "\$RUNNER_TEMP\/installermarker-publish-verify-evidence\/release-verification\.json"/);
+  assert.match(workflow, /--release-tag "\$RELEASE_TAG"/);
+  assert.match(workflow, /--result "\$RUNNER_TEMP\/installermarker-publish-verify-result\/publish-result\.json"/);
+  assert.match(workflow, /publish-verification\.json/);
+  assert.match(workflow, /publish-verification-\$\{\{ github\.run_id \}\}/);
+  assert.doesNotMatch(workflow, /secrets\./);
+  assert.doesNotMatch(workflow, /--allow-unsafe-local-build/);
+  assert.doesNotMatch(workflow, /npm publish|gh release create|notarize|signtool|codesign/);
+});
+
 test("all third-party workflow actions are pinned to immutable commits", async () => {
-  const files = ["ci.yml", "materialize.yml", "build.yml", "release-gate.yml", "release-verify.yml", "publish-plan.yml", "release.yml", "scorecard.yml", "codeql.yml"];
+  const files = ["ci.yml", "materialize.yml", "build.yml", "release-gate.yml", "release-verify.yml", "publish-plan.yml", "publish-verify.yml", "release.yml", "scorecard.yml", "codeql.yml"];
   for (const file of files) {
     const workflow = await readFile(new URL(`../.github/workflows/${file}`, import.meta.url), "utf8");
     const actions = [...workflow.matchAll(/^\s*(?:-\s+)?uses:\s+[^@\s]+@([^\s#]+)/gm)];
@@ -96,7 +121,7 @@ test("all third-party workflow actions are pinned to immutable commits", async (
 });
 
 test("workflow files parse as YAML and publish npm provenance", async () => {
-  const files = ["ci.yml", "materialize.yml", "build.yml", "release-gate.yml", "release-verify.yml", "publish-plan.yml", "release.yml", "scorecard.yml", "codeql.yml"];
+  const files = ["ci.yml", "materialize.yml", "build.yml", "release-gate.yml", "release-verify.yml", "publish-plan.yml", "publish-verify.yml", "release.yml", "scorecard.yml", "codeql.yml"];
   for (const file of files) {
     const workflow = await readFile(new URL(`../.github/workflows/${file}`, import.meta.url), "utf8");
     assert.equal(parseDocument(workflow, { uniqueKeys: true }).errors.length, 0, `${file} is not valid YAML`);

@@ -52,3 +52,15 @@ The workflow downloads both artifacts, runs `publish-plan`, and uploads `publish
 This workflow has only `actions: read` and `contents: read` permissions. It uses no repository secrets, does not run installers, does not invoke scanners, does not access signing credentials, does not sign or notarize artifacts, does not create a GitHub Release, and does not publish packages. Treat its output as a manual publication checklist or as input to a separately reviewed protected release service.
 
 If such a protected release service uploads a raw `publish-result.json`, verify it with `publish-verify` before treating the publication handoff as complete. The verifier uses the same verified artifact directory, final release evidence, and intended release tag to check the returned asset set without querying GitHub Releases.
+
+For repository-managed verification, use `.github/workflows/publish-verify.yml`. Open **Actions**, select **Installer Artifact Publish Verification**, and provide:
+
+- `source_run_id`: the workflow run ID that produced the verified artifact directory.
+- `artifact_name`: the uploaded artifact name containing `artifacts.json` or `build-artifacts.json` plus installers.
+- `verification_run_id`: the workflow run ID that uploaded `release-verification.json`.
+- `verification_artifact_name`: the uploaded artifact name containing `release-verification.json`.
+- `result_run_id`: the workflow run ID that uploaded `publish-result.json`.
+- `result_artifact_name`: the uploaded artifact name containing `publish-result.json`.
+- `release_tag`: the expected release tag to verify, such as `v1.0.0`.
+
+The workflow downloads all three artifacts, runs `publish-verify`, and uploads `publish-verification.json` as `publish-verification-<run_id>`. It has only `actions: read` and `contents: read` permissions, uses no repository secrets, does not run installers, does not query GitHub Releases, does not create a release, and does not publish packages.

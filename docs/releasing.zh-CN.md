@@ -29,3 +29,5 @@ installermarker publish-verify artifacts/linux --release-verification release-ve
 ```
 
 该校验器会在本地重建发布计划，并检查受保护服务报告的发布标签、草稿状态、URL、资产文件名、资产类型、哈希和汇总结论。它不会查询 GitHub Releases，也不会发布任何内容。
+
+如果需要在仓库中运行，`.github/workflows/publish-verify.yml` 会从三组 GitHub Actions artifact 执行同样的校验：已验证产物目录、`release-verification.json` 和 `publish-result.json`。它会把 `publish-verification.json` 作为短期 artifact 上传，并且仍然没有发布服务权限。

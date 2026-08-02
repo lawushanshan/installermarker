@@ -54,3 +54,15 @@ InstallerMarker 在 `.github/workflows/materialize.yml` 中提供了手动触发
 这个工作流只拥有 `actions: read` 和 `contents: read` 权限，不使用仓库密钥，不运行安装包，不调用扫描器，不访问签名凭据，不签名或公证产物，不创建 GitHub Release，也不会发布包。它的输出应作为人工发布检查清单，或作为单独审查过的受保护发布服务输入。
 
 如果该受保护发布服务上传了原始 `publish-result.json`，应先用 `publish-verify` 校验，再把发布交接视为完成。校验器会使用同一个已验证产物目录、最终发布证据和预期发布标签检查返回的资产集合，但不会查询 GitHub Releases。
+
+如果需要在仓库中执行该校验，可以使用 `.github/workflows/publish-verify.yml`。打开 **Actions**，选择 **Installer Artifact Publish Verification**，并填写：
+
+- `source_run_id`：生成已验证产物目录的 workflow run ID。
+- `artifact_name`：包含 `artifacts.json` 或 `build-artifacts.json` 以及安装包的 artifact 名称。
+- `verification_run_id`：上传 `release-verification.json` 的 workflow run ID。
+- `verification_artifact_name`：包含 `release-verification.json` 的 artifact 名称。
+- `result_run_id`：上传 `publish-result.json` 的 workflow run ID。
+- `result_artifact_name`：包含 `publish-result.json` 的 artifact 名称。
+- `release_tag`：需要校验的预期发布标签，例如 `v1.0.0`。
+
+该工作流会下载三组 artifact，运行 `publish-verify`，并把 `publish-verification.json` 作为 `publish-verification-<run_id>` 上传。它只拥有 `actions: read` 和 `contents: read` 权限，不使用仓库密钥，不运行安装包，不查询 GitHub Releases，不创建 Release，也不会发布包。
