@@ -6,6 +6,11 @@ import { writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { materializeRecipe } from "../src/materialize.js";
 import { formatRecipe, formatReport } from "../src/output.js";
+import { createReleasePlan, formatReleasePlan } from "../src/release-plan.js";
+import { createScanPlan, formatScanPlan } from "../src/scan.js";
+import { createSigningPlan, formatSigningPlan } from "../src/signing.js";
+import { createArtifactSbom, formatArtifactSbom } from "../src/sbom.js";
+import { createSmokePlan, formatSmokePlan } from "../src/smoke.js";
 import { parseArguments, usage } from "../src/cli.js";
 import { readRecipe } from "../src/recipe-file.js";
 import { createBuildPlan, createMaterializationPlan, formatValidationReport, validateRecipe } from "../src/validate.js";
@@ -44,6 +49,36 @@ async function main() {
 
     if (options.command === "verify") {
       console.log(formatArtifactVerification(await verifyArtifactDirectory(options.artifactDirectory), options.format));
+      return;
+    }
+
+    if (options.command === "sbom") {
+      const verification = await verifyArtifactDirectory(options.artifactDirectory);
+      console.log(formatArtifactSbom(createArtifactSbom(verification), options.format));
+      return;
+    }
+
+    if (options.command === "smoke-plan") {
+      const verification = await verifyArtifactDirectory(options.artifactDirectory);
+      console.log(formatSmokePlan(createSmokePlan(verification), options.format));
+      return;
+    }
+
+    if (options.command === "sign-plan") {
+      const verification = await verifyArtifactDirectory(options.artifactDirectory);
+      console.log(formatSigningPlan(createSigningPlan(verification), options.format));
+      return;
+    }
+
+    if (options.command === "scan-plan") {
+      const verification = await verifyArtifactDirectory(options.artifactDirectory);
+      console.log(formatScanPlan(createScanPlan(verification), options.format));
+      return;
+    }
+
+    if (options.command === "release-plan") {
+      const verification = await verifyArtifactDirectory(options.artifactDirectory);
+      console.log(formatReleasePlan(createReleasePlan(verification), options.format));
       return;
     }
 
@@ -91,7 +126,7 @@ async function main() {
       console.log(output);
     }
   } catch (error) {
-    const operation = options.command === "materialize" ? "Materialization" : options.command === "build" ? "Build" : options.command === "validate" ? "Validation" : options.command === "verify" ? "Verification" : "Analysis";
+    const operation = options.command === "materialize" ? "Materialization" : options.command === "build" ? "Build" : options.command === "validate" ? "Validation" : options.command === "verify" ? "Verification" : options.command === "sbom" ? "SBOM generation" : options.command === "smoke-plan" ? "Smoke plan generation" : options.command === "sign-plan" ? "Signing plan generation" : options.command === "scan-plan" ? "Scan plan generation" : options.command === "release-plan" ? "Release plan generation" : "Analysis";
     console.error(`${operation} failed: ${error.message}`);
     process.exitCode = 1;
   }

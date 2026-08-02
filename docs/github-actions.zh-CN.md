@@ -14,3 +14,14 @@ InstallerMarker 在 `.github/workflows/materialize.yml` 中提供了手动触发
 它只拥有 `contents: read` 权限，不使用仓库密钥，不检出目标仓库，也不会执行或安装下载文件。工作流会传入 `--recipe-root "$GITHUB_WORKSPACE"`，因此手动触发时不能通过输入路径或符号链接读取控制仓库以外的配方。即使源代码构建字段还没有完成，工作流仍可物化已有安装包；源码构建被刻意排除在该工作流之外。
 
 启用前请保护默认分支，并限制可以手动触发工作流的成员。所有配方变更都应按代码审查，因为配方会在经过 GitHub Release 来源校验的范围内选择外部下载地址。
+
+## 发布门禁计划
+
+当安装包落盘或源码构建工作流已经上传了已验证产物目录后，可以使用 `.github/workflows/release-gate.yml` 生成下一步发布决策需要的审查载荷。打开 **Actions**，选择 **Release Gate Plan**，并填写：
+
+- `source_run_id`：生成已验证产物目录的 workflow run ID。
+- `artifact_name`：上传的 artifact 名称，例如 `verified-installers-<run_id>` 或 `built-installers-linux-<run_id>`。
+
+该工作流会下载对应的 GitHub Actions artifact，依次运行 `verify`、`sbom`、`smoke-plan`、`scan-plan`、`sign-plan` 和 `release-plan`，然后把生成的 JSON 文件作为 `release-gate-plans-<run_id>` 上传。
+
+这个工作流只拥有 `actions: read` 和 `contents: read` 权限，不使用仓库密钥，不运行安装包，不执行冒烟测试，不调用扫描器，不签名或公证产物，也不会发布 Release。它的输出应作为审查包；只有审查通过后，后续受保护的扫描、签名、公证或发布服务才应消费这些已验证安装包。

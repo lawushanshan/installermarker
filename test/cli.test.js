@@ -72,6 +72,41 @@ test("parses artifact verification commands", () => {
   assert.equal(options.format, "json");
 });
 
+test("parses artifact SBOM commands", () => {
+  const options = parseArguments(["sbom", "artifacts", "--json"]);
+  assert.equal(options.command, "sbom");
+  assert.equal(options.artifactDirectory, "artifacts");
+  assert.equal(options.format, "json");
+});
+
+test("parses smoke plan commands", () => {
+  const options = parseArguments(["smoke-plan", "artifacts", "--json"]);
+  assert.equal(options.command, "smoke-plan");
+  assert.equal(options.artifactDirectory, "artifacts");
+  assert.equal(options.format, "json");
+});
+
+test("parses signing plan commands", () => {
+  const options = parseArguments(["sign-plan", "artifacts", "--json"]);
+  assert.equal(options.command, "sign-plan");
+  assert.equal(options.artifactDirectory, "artifacts");
+  assert.equal(options.format, "json");
+});
+
+test("parses artifact scan plan commands", () => {
+  const options = parseArguments(["scan-plan", "artifacts", "--json"]);
+  assert.equal(options.command, "scan-plan");
+  assert.equal(options.artifactDirectory, "artifacts");
+  assert.equal(options.format, "json");
+});
+
+test("parses release plan commands", () => {
+  const options = parseArguments(["release-plan", "artifacts", "--json"]);
+  assert.equal(options.command, "release-plan");
+  assert.equal(options.artifactDirectory, "artifacts");
+  assert.equal(options.format, "json");
+});
+
 test("accepts a version request without a repository URL", () => {
   const options = parseArguments(["--version"]);
   assert.equal(options.version, true);

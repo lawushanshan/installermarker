@@ -66,7 +66,7 @@ export async function verifyArtifactDirectory(directory) {
     throw new Error(`Artifact manifest is invalid at ${error.instancePath || "/"}: ${error.message}`);
   }
 
-  const names = new Set();
+  const names = new Set([manifestFile.name]);
   const artifacts = [];
   for (const artifact of manifest.artifacts) {
     if (names.has(artifact.name)) throw new Error(`Artifact manifest contains a duplicate filename: ${artifact.name}`);
@@ -78,12 +78,28 @@ export async function verifyArtifactDirectory(directory) {
     if (stat.size !== artifact.size) throw new Error(`Artifact size mismatch for ${artifact.name}: expected ${artifact.size}, received ${stat.size}.`);
     const sha256 = await hashFile(path);
     if (sha256 !== artifact.sha256) throw new Error(`Artifact SHA-256 mismatch for ${artifact.name}.`);
-    artifacts.push({ name: artifact.name, size: stat.size, sha256 });
+    artifacts.push({ platform: artifact.platform, name: artifact.name, size: stat.size, sha256 });
   }
-  return { valid: true, manifest: manifestFile.name, source: manifest.source, artifacts };
+  const sbomDocuments = [];
+  for (const document of manifest.sbom?.documents ?? []) {
+    if (names.has(document.name)) throw new Error(`Artifact manifest contains a duplicate filename: ${document.name}`);
+    names.add(document.name);
+    const path = resolveInside(root, document.name);
+    const stat = await existingPath(path);
+    if (!stat) throw new Error(`SBOM document is missing: ${document.name}`);
+    if (stat.isSymbolicLink() || !stat.isFile()) throw new Error(`SBOM document must be a regular file: ${document.name}`);
+    if (stat.size !== document.size) throw new Error(`SBOM document size mismatch for ${document.name}: expected ${document.size}, received ${stat.size}.`);
+    const sha256 = await hashFile(path);
+    if (sha256 !== document.sha256) throw new Error(`SBOM document SHA-256 mismatch for ${document.name}.`);
+    sbomDocuments.push({ name: document.name, format: document.format, size: stat.size, sha256, sourcePath: document.sourcePath });
+  }
+  const result = { valid: true, manifest: manifestFile.name, source: manifest.source, artifacts, ...(sbomDocuments.length ? { sbomDocuments } : {}) };
+  Object.defineProperty(result, "manifestData", { value: manifest, enumerable: false });
+  return result;
 }
 
 export function formatArtifactVerification(result, format = "text") {
   if (format === "json") return JSON.stringify(result, null, 2);
-  return `Verified ${result.artifacts.length} artifact(s) against ${result.manifest} from ${result.source.repository}@${result.source.commit}.`;
+  const sbomSummary = result.sbomDocuments?.length ? ` and ${result.sbomDocuments.length} SBOM document(s)` : "";
+  return `Verified ${result.artifacts.length} artifact(s)${sbomSummary} against ${result.manifest} from ${result.source.repository}@${result.source.commit}.`;
 }

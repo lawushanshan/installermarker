@@ -1,0 +1,54 @@
+name: Release Gate Plan
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_run_id:
+        description: Workflow run ID that produced a verified artifact directory.
+        required: true
+        type: string
+      artifact_name:
+        description: Name of the workflow artifact containing artifacts.json or build-artifacts.json plus installers.
+        required: true
+        type: string
+
+permissions:
+  actions: read
+  contents: read
+
+jobs:
+  release-gate:
+    name: Compose release review plans
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Download verified artifact directory
+        run: |
+          mkdir -p "$RUNNER_TEMP/installermarker-gate-input"
+          gh run download "${{ inputs.source_run_id }}" --name "${{ inputs.artifact_name }}" --dir "$RUNNER_TEMP/installermarker-gate-input"
+        env:
+          GH_TOKEN: ${{ github.token }}
+      - name: Generate release gate plans
+        run: |
+          mkdir -p "$RUNNER_TEMP/installermarker-release-gate"
+          node ./bin/installermarker.js verify "$RUNNER_TEMP/installermarker-gate-input" --json > "$RUNNER_TEMP/installermarker-release-gate/verify.json"
+          node ./bin/installermarker.js sbom "$RUNNER_TEMP/installermarker-gate-input" --json > "$RUNNER_TEMP/installermarker-release-gate/sbom.json"
+          node ./bin/installermarker.js smoke-plan "$RUNNER_TEMP/installermarker-gate-input" --json > "$RUNNER_TEMP/installermarker-release-gate/smoke-plan.json"
+          node ./bin/installermarker.js scan-plan "$RUNNER_TEMP/installermarker-gate-input" --json > "$RUNNER_TEMP/installermarker-release-gate/scan-plan.json"
+          node ./bin/installermarker.js sign-plan "$RUNNER_TEMP/installermarker-gate-input" --json > "$RUNNER_TEMP/installermarker-release-gate/sign-plan.json"
+          node ./bin/installermarker.js release-plan "$RUNNER_TEMP/installermarker-gate-input" --json > "$RUNNER_TEMP/installermarker-release-gate/release-plan.json"
+      - name: Upload release gate plans
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: release-gate-plans-${{ github.run_id }}
+          path: ${{ runner.temp }}/installermarker-release-gate
+          if-no-files-found: error
+          retention-days: 14

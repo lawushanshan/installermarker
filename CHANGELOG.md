@@ -2,6 +2,13 @@
 
 All notable changes to InstallerMarker are documented here. Versions follow Semantic Versioning.
 
+## Unreleased
+
+- Added a plan-only `release-plan` command that composes verification, SBOM, smoke-test, artifact-scan, and signing gates for verified artifact directories.
+- Added a no-secret `release-gate` workflow that downloads a verified workflow artifact directory and uploads review JSON for verification, SBOM, smoke, scan, signing, and release gates.
+- Captured build-produced SPDX/CycloneDX SBOM documents from reviewed source-build artifact directories as hashed build evidence.
+- Shared artifact-manifest projection helpers across read-only plan commands.
+
 ## 0.2.8 - 2026-08-01
 
 - Added a reviewed `python-native` source-build strategy for Python projects detected from standard manifests.

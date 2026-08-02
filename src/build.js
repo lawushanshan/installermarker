@@ -12,6 +12,8 @@ const INSTALLER_EXTENSIONS = {
   "linux-x64": /\.(appimage|deb|rpm)$/i
 };
 const DEFAULT_MAX_ARTIFACT_BYTES = 1024 * 1024 * 1024;
+const DEFAULT_MAX_SBOM_BYTES = 20 * 1024 * 1024;
+const SBOM_FILENAME = /(?:^|[._-])(?:sbom|bom|cyclonedx|cdx|spdx)(?:[._-]|\.|$)|\.spdx(?:\.(?:json|ya?ml))?$/i;
 
 function processError(label, code, signal) {
   return new Error(`${label} failed${code === null ? "" : ` with exit code ${code}`}${signal ? ` (${signal})` : ""}.`);
@@ -106,6 +108,30 @@ export async function collectInstallers(workspace, artifactDirectories, targetPl
   return installers.sort((left, right) => relative(workspace, left).localeCompare(relative(workspace, right)));
 }
 
+function sbomFormat(name) {
+  if (/spdx/i.test(name)) return "spdx";
+  if (/(?:cyclonedx|cdx|bom)/i.test(name)) return "cyclonedx";
+  return "unknown";
+}
+
+export async function collectSbomDocuments(workspace, artifactDirectories, { maxBytes = DEFAULT_MAX_SBOM_BYTES } = {}) {
+  const files = [];
+  for (const directory of artifactDirectories) await walkFiles(resolveInside(workspace, directory), files);
+  const documents = files.filter((file) => SBOM_FILENAME.test(basename(file)));
+  for (const document of documents) {
+    if ((await stat(document)).size > maxBytes) throw new Error(`Build SBOM document exceeds the ${maxBytes}-byte limit: ${basename(document)}.`);
+  }
+  const names = new Set();
+  for (const document of documents) {
+    const name = basename(document);
+    if (names.has(name)) throw new Error(`Build produced duplicate SBOM document filenames: ${name}.`);
+    names.add(name);
+  }
+  return documents
+    .sort((left, right) => relative(workspace, left).localeCompare(relative(workspace, right)))
+    .map((path) => ({ path, name: basename(path), format: sbomFormat(basename(path)) }));
+}
+
 async function hashFile(path) {
   const hash = createHash("sha256");
   for await (const chunk of createReadStream(path)) hash.update(chunk);
@@ -116,8 +142,20 @@ async function publishBuildArtifacts(installerPaths, outputDir, plan) {
   const destination = resolve(outputDir);
   await mkdir(destination, { recursive: true });
   const manifestPath = join(destination, "build-artifacts.json");
-  const names = installerPaths.map((path) => basename(path));
-  for (const path of [manifestPath, ...names.map((name) => join(destination, name))]) {
+  const outputNames = new Set(["build-artifacts.json"]);
+  const plannedOutputs = [manifestPath];
+  for (const sourcePath of installerPaths) {
+    const name = basename(sourcePath);
+    if (outputNames.has(name)) throw new Error(`Build produced duplicate output filenames: ${name}.`);
+    outputNames.add(name);
+    plannedOutputs.push(join(destination, name));
+  }
+  for (const document of plan.sbomDocuments ?? []) {
+    if (outputNames.has(document.name)) throw new Error(`Build produced duplicate output filenames: ${document.name}.`);
+    outputNames.add(document.name);
+    plannedOutputs.push(join(destination, document.name));
+  }
+  for (const path of plannedOutputs) {
     if (await pathExists(path)) throw new Error(`Refusing to overwrite existing output: ${path}`);
   }
 
@@ -133,15 +171,41 @@ async function publishBuildArtifacts(installerPaths, outputDir, plan) {
       const metadata = await stat(stagedPath);
       artifacts.push({ platform: plan.target.platform, name, size: metadata.size, sha256: await hashFile(stagedPath), sourcePath: relative(resolve(plan.workspace), sourcePath) });
     }
+    const sbomDocuments = [];
+    for (const document of plan.sbomDocuments ?? []) {
+      const stagedPath = join(staging, document.name);
+      await copyFile(document.path, stagedPath, constants.COPYFILE_EXCL);
+      const metadata = await stat(stagedPath);
+      sbomDocuments.push({
+        name: document.name,
+        format: document.format,
+        size: metadata.size,
+        sha256: await hashFile(stagedPath),
+        sourcePath: relative(resolve(plan.workspace), document.path)
+      });
+    }
     for (const artifact of artifacts) {
       const finalPath = join(destination, artifact.name);
       await link(join(staging, artifact.name), finalPath);
       created.push(finalPath);
     }
+    for (const document of sbomDocuments) {
+      const finalPath = join(destination, document.name);
+      await link(join(staging, document.name), finalPath);
+      created.push(finalPath);
+    }
+    const finishedAt = new Date();
+    const startedAt = Date.parse(plan.provenance.startedAt);
     const manifest = {
       schemaVersion: 1,
       source: plan.source,
       build: { strategy: plan.target.strategy, command: plan.target.command, platform: plan.target.platform },
+      provenance: {
+        ...plan.provenance,
+        finishedAt: finishedAt.toISOString(),
+        durationMs: Math.max(0, finishedAt.getTime() - startedAt)
+      },
+      ...(sbomDocuments.length ? { sbom: { documents: sbomDocuments } } : {}),
       artifacts
     };
     await writeFile(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`, { flag: "wx" });
@@ -155,7 +219,7 @@ async function publishBuildArtifacts(installerPaths, outputDir, plan) {
   }
 }
 
-export async function buildRecipe(recipe, { targetPlatform, workspace, outputDir, allowUnsafeLocalBuild = false, maxArtifactBytes = DEFAULT_MAX_ARTIFACT_BYTES, processPlatform = process.platform, run = runProcess } = {}) {
+export async function buildRecipe(recipe, { targetPlatform, workspace, outputDir, allowUnsafeLocalBuild = false, maxArtifactBytes = DEFAULT_MAX_ARTIFACT_BYTES, maxSbomBytes = DEFAULT_MAX_SBOM_BYTES, processPlatform = process.platform, run = runProcess } = {}) {
   if (!allowUnsafeLocalBuild) throw new Error("Source builds can execute untrusted code. Pass --allow-unsafe-local-build only in an isolated environment.");
   if (!targetPlatform || !workspace || !outputDir) throw new Error("Source builds require --target, --workspace, and --output-dir.");
   if (HOST_TARGETS[processPlatform] !== targetPlatform) throw new Error(`${targetPlatform} builds must run on its matching host operating system.`);
@@ -168,6 +232,12 @@ export async function buildRecipe(recipe, { targetPlatform, workspace, outputDir
   const hooks = join(home, "hooks");
   await mkdir(hooks);
   const environment = safeBuildEnvironment(home);
+  const startedAt = new Date();
+  const runner = {
+    nodeVersion: process.version,
+    platform: process.platform,
+    arch: process.arch
+  };
 
   try {
     await run("git", ["-c", `core.hooksPath=${hooks}`, "clone", "--no-checkout", target.source.repository, checkout], { env: environment });
@@ -178,7 +248,16 @@ export async function buildRecipe(recipe, { targetPlatform, workspace, outputDir
 
     await run(target.target.command, [], { cwd: checkout, env: environment, shell: true });
     const installers = await collectInstallers(checkout, target.target.artifactDirectories, target.target.platform, { maxBytes: maxArtifactBytes });
-    return await publishBuildArtifacts(installers, outputDir, { ...target, workspace: checkout });
+    const sbomDocuments = await collectSbomDocuments(checkout, target.target.artifactDirectories, { maxBytes: maxSbomBytes });
+    return await publishBuildArtifacts(installers, outputDir, {
+      ...target,
+      workspace: checkout,
+      sbomDocuments,
+      provenance: {
+        startedAt: startedAt.toISOString(),
+        runner
+      }
+    });
   } finally {
     await rm(home, { recursive: true, force: true });
   }

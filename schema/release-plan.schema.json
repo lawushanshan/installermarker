@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:installermarker:release-plan:1",
+  "title": "InstallerMarker release plan",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "generatedAt", "source", "manifest", "execution", "verification", "gates", "plans"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "generatedAt": { "type": "string", "format": "date-time" },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "commit"],
+      "properties": {
+        "repository": { "type": "string", "pattern": "^https://github\\.com/" },
+        "commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+        "license": { "type": "string", "minLength": 1 }
+      }
+    },
+    "manifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": { "enum": ["artifacts.json", "build-artifacts.json"] },
+        "build": { "type": "object" },
+        "provenance": { "type": "object" }
+      }
+    },
+    "execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "safety"],
+      "properties": {
+        "mode": { "const": "plan-only" },
+        "safety": { "type": "string", "minLength": 1 }
+      }
+    },
+    "verification": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["valid", "manifest", "artifactCount"],
+      "properties": {
+        "valid": { "const": true },
+        "manifest": { "enum": ["artifacts.json", "build-artifacts.json"] },
+        "artifactCount": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "gates": {
+      "type": "array",
+      "minItems": 5,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "status", "summary"],
+        "properties": {
+          "name": { "enum": ["verify-artifacts", "sbom", "smoke-test", "artifact-scan", "signing"] },
+          "status": { "enum": ["verified", "planned"] },
+          "summary": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "plans": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["sbom", "smokePlan", "scanPlan", "signingPlan"],
+      "properties": {
+        "sbom": { "type": "object" },
+        "smokePlan": { "type": "object" },
+        "scanPlan": { "type": "object" },
+        "signingPlan": { "type": "object" }
+      }
+    }
+  }
+}

@@ -1,12 +1,13 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import Ajv2020 from "ajv/dist/2020.js";
+import addFormats from "ajv-formats";
 import { execFile } from "node:child_process";
 import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { promisify } from "node:util";
-import { buildRecipe, collectInstallers } from "../src/build.js";
+import { buildRecipe, collectInstallers, collectSbomDocuments } from "../src/build.js";
 import { createBuildPlan, validateRecipe } from "../src/validate.js";
 
 const runCli = promisify(execFile);
@@ -66,6 +67,23 @@ test("collects only platform-compatible installers from configured build directo
   }
 });
 
+test("collects build-produced SBOM documents from configured build directories", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "installermarker-build-test-"));
+  try {
+    await mkdir(join(directory, "dist", "nested"), { recursive: true });
+    await writeFile(join(directory, "dist", "widget.AppImage"), "installer");
+    await writeFile(join(directory, "dist", "nested", "widget.spdx.json"), "{}");
+    await writeFile(join(directory, "dist", "notes.txt"), "not an sbom");
+    assert.deepEqual(await collectSbomDocuments(directory, ["dist"]), [{
+      path: join(directory, "dist", "nested", "widget.spdx.json"),
+      name: "widget.spdx.json",
+      format: "spdx"
+    }]);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
 test("rejects symlinked artifact directories and oversized build artifacts", async () => {
   const directory = await mkdtemp(join(tmpdir(), "installermarker-build-test-"));
   try {
@@ -102,6 +120,7 @@ test("build worker clones a pinned revision, publishes installers, and records h
       if (command === recipe.build.command) {
         await mkdir(join(options.cwd, "dist"), { recursive: true });
         await writeFile(join(options.cwd, "dist", "widget.AppImage"), "built installer");
+        await writeFile(join(options.cwd, "dist", "widget.spdx.json"), "{\"spdxVersion\":\"SPDX-2.3\"}");
       }
       return { stdout: "", stderr: "" };
     };
@@ -115,11 +134,20 @@ test("build worker clones a pinned revision, publishes installers, and records h
     });
     assert.equal(manifest.artifacts[0].name, "widget.AppImage");
     assert.equal(manifest.source.license, undefined);
+    assert.equal(manifest.provenance.runner.nodeVersion, process.version);
+    assert.equal(manifest.provenance.runner.platform, process.platform);
+    assert.equal(manifest.provenance.runner.arch, process.arch);
+    assert.equal(manifest.sbom.documents[0].name, "widget.spdx.json");
+    assert.equal(manifest.sbom.documents[0].format, "spdx");
     assert.equal(await readFile(join(output, "widget.AppImage"), "utf8"), "built installer");
+    assert.equal(await readFile(join(output, "widget.spdx.json"), "utf8"), "{\"spdxVersion\":\"SPDX-2.3\"}");
     const savedManifest = JSON.parse(await readFile(join(output, "build-artifacts.json"), "utf8"));
     assert.equal(savedManifest.artifacts[0].sha256.length, 64);
+    assert.equal(savedManifest.sbom.documents[0].sha256.length, 64);
     const schema = JSON.parse(await readFile(new URL("../schema/build-artifact-manifest.schema.json", import.meta.url), "utf8"));
-    assert.equal(new Ajv2020({ strict: true }).compile(schema)(savedManifest), true);
+    const ajv = new Ajv2020({ strict: true });
+    addFormats(ajv);
+    assert.equal(ajv.compile(schema)(savedManifest), true);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }
@@ -152,8 +180,11 @@ test("build worker executes a reviewed native packaging recipe", async () => {
     });
     assert.equal(manifest.build.strategy, "go-native");
     assert.equal(manifest.artifacts[0].name, "widget.deb");
+    assert.equal(manifest.provenance.runner.nodeVersion, process.version);
     const schema = JSON.parse(await readFile(new URL("../schema/build-artifact-manifest.schema.json", import.meta.url), "utf8"));
-    assert.equal(new Ajv2020({ strict: true }).compile(schema)(manifest), true);
+    const ajv = new Ajv2020({ strict: true });
+    addFormats(ajv);
+    assert.equal(ajv.compile(schema)(manifest), true);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

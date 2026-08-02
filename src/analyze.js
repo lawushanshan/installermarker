@@ -1,5 +1,6 @@
 import { createGitHubClient, decodeContent, parseGitHubUrl } from "./github.js";
 import { classifyTargets, detectProject } from "./detect.js";
+import { assessDependencyRisks, extractDependencyInventory } from "./dependencies.js";
 
 const INTERESTING_FILES = new Set([
   "package.json", "go.mod", "Cargo.toml", "pyproject.toml", "requirements.txt", "setup.py",
@@ -20,12 +21,15 @@ export async function analyzeRepository(url, { fetch, token } = {}) {
   const tree = await github.tree(owner, repository, treeSha);
   if (tree.truncated) throw new Error("Repository tree is too large for safe automatic inspection. Add an explicit recipe manually.");
 
-  const paths = tree.tree.filter((item) => item.type === "blob" && INTERESTING_FILES.has(item.path)).map((item) => item.path);
+  const blobPaths = tree.tree.filter((item) => item.type === "blob").map((item) => item.path);
+  const paths = blobPaths.filter((path) => INTERESTING_FILES.has(path));
   const files = await Promise.all(paths.map(async (path) => {
     const content = await github.content(owner, repository, path, commit.sha);
     return { path, content: decodeContent(content) };
   }));
   const project = detectProject(files);
+  const dependencies = extractDependencyInventory(files, { paths: blobPaths });
+  const dependencyRisks = assessDependencyRisks(dependencies);
   const assets = (release?.assets ?? []).map((asset) => ({
     name: asset.name,
     url: asset.browser_download_url,
@@ -55,6 +59,8 @@ export async function analyzeRepository(url, { fetch, token } = {}) {
     analysis: {
       project,
       inspectedFiles: files.map((file) => file.path),
+      dependencies,
+      dependencyRisks,
       latestRelease: release ? { tag: release.tag_name, publishedAt: release.published_at, url: release.html_url } : null,
       confidence: availableTargets === 3 ? "high" : project.kind === "unknown" ? "low" : "medium",
       safety: "Static metadata inspection only. No repository code has been cloned or executed."

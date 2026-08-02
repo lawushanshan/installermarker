@@ -1,6 +1,10 @@
+const PROJECTION_COMMANDS = new Set(["sbom", "smoke-plan", "sign-plan", "scan-plan", "release-plan"]);
+const ARTIFACT_DIRECTORY_COMMANDS = new Set(["verify", ...PROJECTION_COMMANDS]);
+const COMMANDS = new Set(["inspect", "materialize", "validate", "build", ...ARTIFACT_DIRECTORY_COMMANDS]);
+
 export function parseArguments(argumentsList) {
   const args = [...argumentsList];
-  const explicitCommand = args[0] === "inspect" || args[0] === "materialize" || args[0] === "validate" || args[0] === "build" || args[0] === "verify";
+  const explicitCommand = COMMANDS.has(args[0]);
   const command = explicitCommand ? args.shift() : "inspect";
   const options = {
     command,
@@ -57,7 +61,7 @@ export function parseArguments(argumentsList) {
   }
 
   if (!options.help && !options.version && !options.input) {
-    throw new Error(command === "inspect" ? "A GitHub repository URL is required." : command === "verify" ? "An artifact directory is required." : "A JSON or YAML recipe file is required.");
+    throw new Error(command === "inspect" ? "A GitHub repository URL is required." : ARTIFACT_DIRECTORY_COMMANDS.has(command) ? "An artifact directory is required." : "A JSON or YAML recipe file is required.");
   }
   if (!["text", "json", "yaml"].includes(options.format)) throw new Error("--format must be text, json, or yaml.");
 
@@ -83,6 +87,12 @@ export function parseArguments(argumentsList) {
       throw new Error("validate accepts only --format, --json, and --strict options.");
     }
     if (options.format === "yaml") throw new Error("validate supports only text and json output.");
+  } else if (PROJECTION_COMMANDS.has(command)) {
+    options.artifactDirectory = options.input;
+    if (options.recipe || options.output || options.force || options.dryRun || options.outputDir || options.workspace || options.recipeRoot || options.targetPlatform || options.allowUnsafeLocalBuild || options.token || options.strict) {
+      throw new Error(`${command} accepts only --format and --json options.`);
+    }
+    if (options.format === "yaml") throw new Error(`${command} supports only text and json output.`);
   } else {
     options.artifactDirectory = options.input;
     if (options.recipe || options.output || options.force || options.dryRun || options.outputDir || options.workspace || options.recipeRoot || options.targetPlatform || options.allowUnsafeLocalBuild || options.token || options.strict) {
@@ -100,6 +110,11 @@ export function usage() {
   installermarker materialize <recipe.(json|yaml)> --output-dir <directory>
   installermarker build <recipe.(json|yaml)> --target <platform> --workspace <directory> --output-dir <directory> --allow-unsafe-local-build
   installermarker validate <recipe.(json|yaml)> [--strict] [--format text|json]
+  installermarker sbom <artifact-directory> [--format text|json]
+  installermarker smoke-plan <artifact-directory> [--format text|json]
+  installermarker sign-plan <artifact-directory> [--format text|json]
+  installermarker scan-plan <artifact-directory> [--format text|json]
+  installermarker release-plan <artifact-directory> [--format text|json]
   installermarker verify <artifact-directory> [--format text|json]
 
 Inspect options:

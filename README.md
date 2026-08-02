@@ -7,7 +7,7 @@ InstallerMarker is a safe first-pass analyzer for turning an open-source GitHub 
 ## What version 0.2 does
 
 - Accepts a public GitHub repository URL.
-- Reads repository metadata, release assets, and a small allowlist of standard manifest files.
+- Reads repository metadata, release assets, and a small allowlist of standard manifest files, then extracts declared dependencies from supported root manifests.
 - Resolves the default branch once and pins analysis and recipes to its immutable commit SHA.
 - Detects common project families: Electron, Tauri, Go, Rust, Python, Java, Node.js, and container services.
 - Assesses Windows x64, macOS, and Linux x64 independently as `available`, `likely`, or `needs_review`.
@@ -48,6 +48,11 @@ installermarker materialize installermarker.json --dry-run
 installermarker materialize installermarker.json --output-dir artifacts/v1
 installermarker materialize installermarker.json --target linux-x64 --output-dir artifacts/linux
 installermarker verify artifacts/v1
+installermarker sbom artifacts/v1 --format json > sbom.json
+installermarker smoke-plan artifacts/v1 --format json > smoke-plan.json
+installermarker sign-plan artifacts/v1 --format json > sign-plan.json
+installermarker scan-plan artifacts/v1 --format json > scan-plan.json
+installermarker release-plan artifacts/v1 --format json > release-plan.json
 ```
 
 For private repositories or higher GitHub API limits, set a token with read-only repository access:
@@ -72,11 +77,18 @@ The recipe also records GitHub's SPDX license evidence. `NOASSERTION` is a revie
 
 Use `validate` before materialization. It reports schema errors separately from unresolved review warnings. `validate --strict` returns a nonzero status for either errors or warnings and is intended for CI gates.
 
+The inspection report now includes a read-only dependency inventory for supported root manifests such as `package.json`, `go.mod`, `Cargo.toml`, and `requirements.txt`, lockfile presence evidence such as `package-lock.json`, `go.sum`, and `Cargo.lock`, plus a small risk scan that flags obvious file, VCS, URL, and alternate-index references. It is a metadata scan only; no dependency is installed or executed, and lockfiles are detected from the repository tree rather than downloaded.
+
 `materialize` currently accepts only public installers whose URL belongs to the source repository's GitHub Releases and whose SHA-256 digest is present in the recipe. It streams each selected asset into a staging directory, verifies its declared size and digest, and then publishes the files with an `artifacts.json` provenance manifest. Use `--target` to select one platform, or omit it to collect every reusable installer in the recipe. It neither opens nor installs the artifacts. Existing output files are never overwritten.
 
-Use `verify <artifact-directory>` to recheck an existing `artifacts.json` or `build-artifacts.json` directory offline. It validates the manifest contract, filenames, byte sizes, and SHA-256 values without executing any artifact.
+Use `verify <artifact-directory>` to recheck an existing `artifacts.json` or `build-artifacts.json` directory offline. It validates the manifest contract, filenames, byte sizes, and SHA-256 values for installers and any build-produced SBOM documents without executing any artifact.
+Use `sbom <artifact-directory>` to derive a read-only component inventory from the verified manifest. For source-build outputs, it carries forward verified build-produced SBOM documents as evidence. It never executes or installs any artifact.
+Use `smoke-plan <artifact-directory>` to derive a plan-only install/launch/uninstall checklist for each verified installer. It does not execute the plan or run installers.
+Use `sign-plan <artifact-directory>` to derive a plan-only signing request for a separately protected signing service. It does not access certificates, sign artifacts, notarize packages, or publish releases.
+Use `scan-plan <artifact-directory>` to derive a plan-only malware/reputation/SBOM-correlation scan request. It does not execute scanners, upload artifacts, or contact reputation services.
+Use `release-plan <artifact-directory>` to derive a single plan-only release gate that combines verification evidence, SBOM, smoke-test, scan, and signing plans. It does not execute artifacts, run smoke tests, invoke scanners, sign artifacts, notarize packages, or publish releases.
 
-For Electron and Tauri projects without ready-made installers, review the generated source-build recipe, set its reviewed `build.command`, and run one native build per target. Go, Rust, and Python projects receive a `build-native` target: select and review the native packaging command and output directory before execution. Python projects default to `dist` and `build`, but the entrypoint and packager remain explicit review items. The Worker accepts Windows `.msi`/`.exe`, macOS `.dmg`/`.pkg`, and Linux `.AppImage`/`.deb`/`.rpm` packages. See [source builds](docs/source-build.md).
+For Electron and Tauri projects without ready-made installers, review the generated source-build recipe, set its reviewed `build.command`, and run one native build per target. Go, Rust, and Python projects receive a `build-native` target: select and review the native packaging command and output directory before execution. Python projects default to `dist` and `build`, but the entrypoint and packager remain explicit review items. The Worker accepts Windows `.msi`/`.exe`, macOS `.dmg`/`.pkg`, and Linux `.AppImage`/`.deb`/`.rpm` packages. If the reviewed build command emits common SPDX or CycloneDX SBOM documents inside the configured artifact directories, the Worker copies and hashes them as build SBOM evidence; it does not generate those documents itself. See [source builds](docs/source-build.md).
 
 ## Project lifecycle
 
@@ -97,12 +109,12 @@ The scheduled [OpenSSF Scorecard workflow](.github/workflows/scorecard.yml) and 
 
 ## Scope and roadmap
 
-Version 0.2 includes static analysis, pinned recipe generation, verified materialization of existing installers, and reviewed Electron/Tauri, Go, Rust, and Python source-build paths. The next phase is opinionated packaging adapters, SBOM generation, malware/dependency scans, install/uninstall smoke tests, and signing isolated from untrusted builds. Windows Authenticode and macOS Developer ID/notarization credentials must never be exposed to repository build scripts.
+Version 0.2 includes static analysis, pinned recipe generation, verified materialization of existing installers, reviewed Electron/Tauri, Go, Rust, and Python source-build paths with build provenance and build-produced SBOM evidence capture, read-only SBOM projection, plan-only smoke-test generation, plan-only signing requests, plan-only artifact scan requests, and a combined plan-only release gate for verified artifact directories. The next phase is opinionated packaging adapters, fuller dependency SBOM generation during builds, isolated smoke-test execution, approved scanner integration, and a protected signing service. Windows Authenticode and macOS Developer ID/notarization credentials must never be exposed to repository build scripts.
 
 See [CONTRIBUTING.md](CONTRIBUTING.md), [SECURITY.md](SECURITY.md), [docs/architecture.md](docs/architecture.md), [docs/materialize.md](docs/materialize.md), [docs/verify.md](docs/verify.md), and [docs/releasing.md](docs/releasing.md).
 
 Release history is maintained in [CHANGELOG.md](CHANGELOG.md).
 
-For a repository-managed, no-secret materialization run, see [the GitHub Actions worker guide](docs/github-actions.md).
+For repository-managed, no-secret materialization and release-gate runs, see [the GitHub Actions worker guide](docs/github-actions.md).
 
 For native Windows, macOS, and Linux source builds in a protected environment, see [the source-build guide](docs/source-build.md).
