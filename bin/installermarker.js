@@ -9,6 +9,7 @@ import { materializeRecipe } from "../src/materialize.js";
 import { formatRecipe, formatReport } from "../src/output.js";
 import { createReleasePlan, formatReleasePlan } from "../src/release-plan.js";
 import { createScanPlan, formatScanPlan } from "../src/scan.js";
+import { formatScanVerification, readScanResult, verifyScanResult } from "../src/scan-result.js";
 import { createSigningPlan, formatSigningPlan } from "../src/signing.js";
 import { createArtifactSbom, formatArtifactSbom } from "../src/sbom.js";
 import { createSmokePlan, formatSmokePlan } from "../src/smoke.js";
@@ -77,6 +78,14 @@ async function main() {
       return;
     }
 
+    if (options.command === "scan-verify") {
+      const verification = await verifyArtifactDirectory(options.artifactDirectory);
+      const result = verifyScanResult(verification, await readScanResult(options.scanResultFile));
+      console.log(formatScanVerification(result, options.format));
+      if (!result.valid) process.exitCode = 1;
+      return;
+    }
+
     if (options.command === "release-plan") {
       const verification = await verifyArtifactDirectory(options.artifactDirectory);
       console.log(formatReleasePlan(createReleasePlan(verification), options.format));
@@ -134,7 +143,7 @@ async function main() {
       console.log(output);
     }
   } catch (error) {
-    const operation = options.command === "materialize" ? "Materialization" : options.command === "build" ? "Build" : options.command === "validate" ? "Validation" : options.command === "verify" ? "Verification" : options.command === "sbom" ? "SBOM generation" : options.command === "smoke-plan" ? "Smoke plan generation" : options.command === "sign-plan" ? "Signing plan generation" : options.command === "scan-plan" ? "Scan plan generation" : options.command === "release-plan" ? "Release plan generation" : options.command === "gate-verify" ? "Release gate verification" : "Analysis";
+    const operation = options.command === "materialize" ? "Materialization" : options.command === "build" ? "Build" : options.command === "validate" ? "Validation" : options.command === "verify" ? "Verification" : options.command === "sbom" ? "SBOM generation" : options.command === "smoke-plan" ? "Smoke plan generation" : options.command === "sign-plan" ? "Signing plan generation" : options.command === "scan-plan" ? "Scan plan generation" : options.command === "scan-verify" ? "Scan result verification" : options.command === "release-plan" ? "Release plan generation" : options.command === "gate-verify" ? "Release gate verification" : "Analysis";
     console.error(`${operation} failed: ${error.message}`);
     process.exitCode = 1;
   }

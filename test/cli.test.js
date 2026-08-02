@@ -100,6 +100,18 @@ test("parses artifact scan plan commands", () => {
   assert.equal(options.format, "json");
 });
 
+test("parses scan verification commands", () => {
+  const options = parseArguments(["scan-verify", "artifacts", "--result", "scan-result.json", "--json"]);
+  assert.equal(options.command, "scan-verify");
+  assert.equal(options.artifactDirectory, "artifacts");
+  assert.equal(options.scanResultFile, "scan-result.json");
+  assert.equal(options.format, "json");
+});
+
+test("requires a scan result for scan verification", () => {
+  assert.throws(() => parseArguments(["scan-verify", "artifacts"]), /requires --result/);
+});
+
 test("parses release plan commands", () => {
   const options = parseArguments(["release-plan", "artifacts", "--json"]);
   assert.equal(options.command, "release-plan");
