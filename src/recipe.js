@@ -29,7 +29,9 @@ export function createRecipe(report) {
     "Run builds in isolated CI workers before signing."
   ];
   if (project.suggestedBuildCommand) {
-    review.push("Review the suggested build command before copying it into build.command.");
+    review.push(project.suggestedPackager
+      ? `Review the suggested ${project.suggestedPackager} build command before copying it into build.command.`
+      : "Review the suggested build command before copying it into build.command.");
   }
   if (targets.some((target) => target.input && !target.input.digest)) {
     review.push("Calculate and verify SHA-256 for release assets that do not publish a digest.");
@@ -51,6 +53,7 @@ export function createRecipe(report) {
       strategy: project.strategy,
       command: "TODO: confirm reproducible build command",
       artifactDirectories: project.artifactDirectories ?? [],
+      ...(project.suggestedPackager ? { suggestedPackager: project.suggestedPackager } : {}),
       ...(project.suggestedBuildCommand ? { suggestedCommand: project.suggestedBuildCommand } : {})
     },
     targets,

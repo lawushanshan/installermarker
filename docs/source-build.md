@@ -21,7 +21,7 @@ Inspect the repository and produce a JSON or YAML recipe. For Electron and Tauri
 
 Run `installermarker validate recipe.json`. The source-build status must be `ready`. A source build command is a security boundary: do not copy a suggestion into `build.command` until it has been reviewed for that repository and pinned commit.
 
-For `build-native`, use `build.strategy: go-native`, `rust-native`, or `python-native`, retain `packaging: build-native`, and configure a command that produces a platform installer in `artifactDirectories`. Python detection defaults to `dist` and `build`, and may suggest a packager command when it recognizes Briefcase, PyInstaller, Nuitka, or cx_Freeze in the standard manifests, but it still leaves the entrypoint and final command for review. The reviewer must select and audit the command for the pinned source revision. The Worker deliberately does not choose a packager on the reviewer's behalf: Windows, macOS, and Linux packaging tools have different trust and signing requirements.
+For `build-native`, use `build.strategy: go-native`, `rust-native`, or `python-native`, retain `packaging: build-native`, and configure a command that produces a platform installer in `artifactDirectories`. Python detection defaults to `dist` and `build`, and may suggest both `build.suggestedPackager` and `build.suggestedCommand` when it recognizes Briefcase, PyInstaller, Nuitka, or cx_Freeze in the standard manifests, but it still leaves the entrypoint and final command for review. The reviewer must select and audit the command for the pinned source revision. The Worker deliberately does not choose a packager on the reviewer's behalf: Windows, macOS, and Linux packaging tools have different trust and signing requirements.
 
 ## Local execution
 

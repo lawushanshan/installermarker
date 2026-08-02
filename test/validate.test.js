@@ -99,6 +99,21 @@ test("allows reviewed Go, Rust, and Python native installer build plans", () => 
   }
 });
 
+test("accepts structured suggested packager hints in native build recipes", () => {
+  const recipe = validRecipe({
+    build: {
+      strategy: "python-native",
+      command: "reviewed-native-packager",
+      artifactDirectories: ["packages"],
+      suggestedPackager: "briefcase"
+    },
+    targets: [{ platform: "linux-x64", status: "likely", packaging: "build-native" }]
+  });
+  const result = validateRecipe(recipe);
+  assert.equal(result.valid, true);
+  assert.equal(result.readyForBuild, true);
+});
+
 test("rejects native build targets that do not declare a native strategy", () => {
   const recipe = validRecipe({
     build: { strategy: "electron", command: "reviewed-native-packager", artifactDirectories: ["packages"] },

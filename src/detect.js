@@ -48,6 +48,29 @@ function packageJsonDetails(content) {
   }
 }
 
+const PYTHON_PACKAGER_HINTS = [
+  {
+    pattern: /\bbriefcase\b/,
+    packager: "briefcase",
+    command: "python -m pip install briefcase && briefcase build"
+  },
+  {
+    pattern: /\bpyinstaller\b/,
+    packager: "pyinstaller",
+    command: "python -m pip install pyinstaller && pyinstaller TODO: confirm executable entrypoint"
+  },
+  {
+    pattern: /\bnuitka\b/,
+    packager: "nuitka",
+    command: "python -m pip install nuitka && python -m nuitka --standalone TODO: confirm executable entrypoint"
+  },
+  {
+    pattern: /\bcx[_-]?freeze\b/,
+    packager: "cx_Freeze",
+    command: "python -m pip install cx_Freeze && python setup.py build"
+  }
+];
+
 function pythonDetails(contents) {
   const text = contents.join("\n").toLowerCase();
   const base = {
@@ -56,28 +79,12 @@ function pythonDetails(contents) {
     evidence: "Python project manifest found",
     artifactDirectories: ["dist", "build"]
   };
-  if (/\bbriefcase\b/.test(text)) {
+  const hint = PYTHON_PACKAGER_HINTS.find(({ pattern }) => pattern.test(text));
+  if (hint) {
     return {
       ...base,
-      suggestedBuildCommand: "python -m pip install briefcase && briefcase build"
-    };
-  }
-  if (/\bpyinstaller\b/.test(text)) {
-    return {
-      ...base,
-      suggestedBuildCommand: "python -m pip install pyinstaller && pyinstaller TODO: confirm executable entrypoint"
-    };
-  }
-  if (/\bnuitka\b/.test(text)) {
-    return {
-      ...base,
-      suggestedBuildCommand: "python -m pip install nuitka && python -m nuitka --standalone TODO: confirm executable entrypoint"
-    };
-  }
-  if (/\bcx[_-]?freeze\b/.test(text)) {
-    return {
-      ...base,
-      suggestedBuildCommand: "python -m pip install cx_Freeze && python setup.py build"
+      suggestedPackager: hint.packager,
+      suggestedBuildCommand: hint.command
     };
   }
   return base;
