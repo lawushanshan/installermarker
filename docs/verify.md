@@ -27,4 +27,6 @@ Use `installermarker scan-verify artifacts/linux --result scan-result.json --for
 
 Use `installermarker release-plan artifacts/linux --format json` to generate a single plan-only release gate. It verifies local artifact integrity first, then composes the SBOM, smoke-test, scan, and signing plans into one reviewable payload. It does not execute artifacts, run smoke tests, invoke scanners, sign artifacts, notarize packages, or publish releases.
 
+Use `installermarker release-verify artifacts/linux --smoke-result smoke-result.json --scan-result scan-result.json --sign-result sign-result.json --format json` after external smoke, scan, and signing services return their raw result files. The command re-verifies the local artifact directory, reruns all three result verifiers locally, and emits one final release evidence report. It does not trust precomputed verification reports and still does not execute artifacts, invoke scanners, sign artifacts, notarize packages, or publish releases.
+
 Use `installermarker gate-verify release-gate-plans --format json` to validate a CI-generated release-gate bundle. It checks that the standalone JSON files and the embedded plans in `release-plan.json` agree with `verify.json`.

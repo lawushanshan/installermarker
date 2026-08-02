@@ -143,6 +143,20 @@ test("parses release plan commands", () => {
   assert.equal(options.format, "json");
 });
 
+test("parses release verification commands", () => {
+  const options = parseArguments(["release-verify", "artifacts", "--smoke-result", "smoke-result.json", "--scan-result", "scan-result.json", "--sign-result", "sign-result.json", "--json"]);
+  assert.equal(options.command, "release-verify");
+  assert.equal(options.artifactDirectory, "artifacts");
+  assert.equal(options.smokeResultFile, "smoke-result.json");
+  assert.equal(options.scanResultFile, "scan-result.json");
+  assert.equal(options.signResultFile, "sign-result.json");
+  assert.equal(options.format, "json");
+});
+
+test("requires all external results for release verification", () => {
+  assert.throws(() => parseArguments(["release-verify", "artifacts", "--smoke-result", "smoke-result.json", "--scan-result", "scan-result.json"]), /requires --smoke-result/);
+});
+
 test("parses release gate verification commands", () => {
   const options = parseArguments(["gate-verify", "release-gate", "--json"]);
   assert.equal(options.command, "gate-verify");
