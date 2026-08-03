@@ -7,6 +7,14 @@ GitHub URL -> read-only inspection -> assessment + recipe -> reviewed build requ
                                                     -> isolated target workers -> signing -> release
 ```
 
+The shorter local packaging path is:
+
+```text
+local project directory -> detect project and packaging command -> build on current host -> collect distributables -> package-manifest.json
+```
+
+`installermarker package` is the everyday entry point. It does not require a GitHub recipe and does not run signing, scanning, or release gates; it runs the project's existing packaging command on the current host and collects common installer or archive files.
+
 The current CLI implements read-only discovery, pinned recipes, a restricted materialization worker for existing installers, and source-build workers for Electron, Tauri, and reviewer-configured Go/Rust/Python native packaging. Discovery resolves the default branch to an immutable commit, then uses the GitHub REST API to retrieve the pinned tree, an allowlist of root-level manifests, declared dependency inventory from supported manifests, lockfile presence from the tree, a small dependency risk scan, and the latest release. Materialization can download digest-pinned installers from that repository's public GitHub Releases, but no artifact or target-repository instruction is executed as a command.
 
 ## Recipe contract

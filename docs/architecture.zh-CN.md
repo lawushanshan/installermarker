@@ -9,6 +9,14 @@ GitHub URL -> 只读分析 -> 评估结果与配方 -> 经审核的构建请求
                                            -> 隔离的目标平台 Worker -> 签名 -> 发布
 ```
 
+本地打包主流程更短：
+
+```text
+本地项目目录 -> 识别项目与打包命令 -> 当前宿主机构建 -> 收集分发文件 -> package-manifest.json
+```
+
+`installermarker package` 是日常使用入口。它不要求先生成 GitHub recipe，也不执行签名、扫描或发布门禁；只在当前机器上运行项目已有的打包命令，并收集常见安装包或压缩包。
+
 当前 CLI 已实现只读发现、固定 commit 的配方、已有安装包的受限 Worker，以及 Electron/Tauri 和经审核人配置的 Go/Rust/Python 原生打包源码构建 Worker。发现阶段先将默认分支解析成不可变 commit，再通过 GitHub REST API 获取该 commit 对应的文件树、允许读取的标准清单文件、受支持清单中的声明式依赖清单、从文件树检测到的锁文件存在性、小型依赖风险扫描，以及最新 Release。落盘阶段只能下载该仓库公开 GitHub Releases 中、已经固定摘要的安装包；安装包和目标仓库中的任何指令都不会被作为命令执行。
 
 ## 配方约定

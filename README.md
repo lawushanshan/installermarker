@@ -2,7 +2,7 @@
 
 中文文档请见 [README.zh-CN.md](README.zh-CN.md)。
 
-InstallerMarker is a safe first-pass analyzer for turning an open-source GitHub repository into a cross-platform installer plan. It does not claim that every repository can become a Windows, macOS, and Linux application automatically. Instead, it makes the packaging decision explicit, repeatable, and reviewable.
+InstallerMarker is a local source packager: it reads an open-source project directory, runs the project's packaging command, collects distributable files, and writes a SHA-256 backed `package-manifest.json`. GitHub analysis and release review workflows remain available, but they are not required for local packaging.
 
 ## What version 0.2 does
 
@@ -13,8 +13,9 @@ InstallerMarker is a safe first-pass analyzer for turning an open-source GitHub 
 - Assesses Windows x64, macOS, and Linux x64 independently as `available`, `likely`, or `needs_review`.
 - Generates an editable installer recipe draft for later isolated builds.
 - Materializes existing GitHub Release installers into a verified artifact directory without executing them.
+- Packages a local project with its existing build command and collects distributable files for the current host.
 
-It never clones, installs dependencies from, or executes the inspected repository. This is intentional: a URL submitted to an installer factory must be treated as untrusted input.
+Inspect mode never clones, installs dependencies from, or executes the inspected repository. This is intentional: a URL submitted to an installer factory must be treated as untrusted input.
 
 ## Quick start
 
@@ -42,6 +43,7 @@ npm install --global ./installermarker-0.2.8.tgz
 ```bash
 installermarker https://github.com/owner/repository
 installermarker https://github.com/owner/repository --recipe --format yaml
+installermarker package ./my-project --command "npm run dist" --artifact-dir dist --output-dir packages
 installermarker https://github.com/owner/repository --recipe --format json --output installermarker.json
 installermarker validate installermarker.json
 installermarker materialize installermarker.json --dry-run
@@ -69,6 +71,17 @@ GITHUB_TOKEN=github_pat_xxx installermarker https://github.com/owner/repository 
 ```
 
 The token is used only for GitHub API requests during that invocation and is never written to disk.
+
+## Local source packaging
+
+The main local workflow is `package`. It builds for the current host only and uses the project's existing packaging command. Common commands are suggested when Electron Builder, Electron Forge, Tauri CLI, or a Python packager is named in the standard manifests; pass `--command` for other projects.
+
+```bash
+installermarker package ./project --dry-run
+installermarker package ./project --command "npm run dist" --artifact-dir dist --output-dir packages
+```
+
+After the command finishes, InstallerMarker collects `.exe`, `.msi`, `.dmg`, `.pkg`, `.AppImage`, `.deb`, `.rpm`, `.zip`, `.tar.gz`, and `.tgz` files from the selected artifact directories, copies them to the output directory, and writes `package-manifest.json`. Windows, macOS, and Linux installers must be built on their matching host systems.
 
 ## Interpretation
 

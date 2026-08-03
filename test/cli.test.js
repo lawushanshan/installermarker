@@ -69,6 +69,17 @@ test("parses explicit source-build acknowledgement", () => {
   assert.equal(options.allowUnsafeLocalBuild, true);
 });
 
+test("parses local package commands", () => {
+  const options = parseArguments(["package", ".", "--command", "npm run dist", "--target", "linux-x64", "--artifact-dir", "release", "--output-dir", "packages", "--dry-run"]);
+  assert.equal(options.command, "package");
+  assert.equal(options.projectDirectory, ".");
+  assert.equal(options.buildCommand, "npm run dist");
+  assert.equal(options.targetPlatform, "linux-x64");
+  assert.deepEqual(options.artifactDirectory, ["release"]);
+  assert.equal(options.outputDir, "packages");
+  assert.equal(options.dryRun, true);
+});
+
 test("parses artifact verification commands", () => {
   const options = parseArguments(["verify", "artifacts", "--json"]);
   assert.equal(options.command, "verify");

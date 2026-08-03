@@ -6,6 +6,7 @@ import { formatGateVerification, verifyGateDirectory } from "../src/gate.js";
 import { writeFile } from "node:fs/promises";
 import { createRequire } from "node:module";
 import { materializeRecipe } from "../src/materialize.js";
+import { packageProject } from "../src/local-build.js";
 import { formatRecipe, formatReport } from "../src/output.js";
 import { createPublishPlanFromFiles, formatPublishPlan } from "../src/publish-plan.js";
 import { formatPublishVerification, readPublishResult, verifyPublishResult } from "../src/publish-result.js";
@@ -172,6 +173,20 @@ async function main() {
       return;
     }
 
+    if (options.command === "package") {
+      const manifest = await packageProject(options.projectDirectory, {
+        command: options.buildCommand,
+        targetPlatform: options.targetPlatform,
+        artifactDirectories: options.artifactDirectory,
+        outputDir: options.outputDir,
+        dryRun: options.dryRun,
+        force: options.force
+      });
+      if (options.dryRun) console.log(JSON.stringify(manifest, null, 2));
+      else console.log(`Packaged ${manifest.artifacts.length} distributable file(s) in ${options.outputDir ?? manifest.source.path + "/.installermarker-output"}`);
+      return;
+    }
+
     if (options.command === "materialize") {
       const recipe = await readRecipe(options.recipeFile, { root: options.recipeRoot });
       if (options.dryRun) {
@@ -200,7 +215,7 @@ async function main() {
       console.log(output);
     }
   } catch (error) {
-    const operation = options.command === "materialize" ? "Materialization" : options.command === "build" ? "Build" : options.command === "validate" ? "Validation" : options.command === "verify" ? "Verification" : options.command === "sbom" ? "SBOM generation" : options.command === "smoke-plan" ? "Smoke plan generation" : options.command === "smoke-verify" ? "Smoke result verification" : options.command === "sign-plan" ? "Signing plan generation" : options.command === "sign-verify" ? "Signing result verification" : options.command === "scan-plan" ? "Scan plan generation" : options.command === "scan-verify" ? "Scan result verification" : options.command === "release-plan" ? "Release plan generation" : options.command === "release-verify" ? "Release evidence verification" : options.command === "publish-plan" ? "Publish plan generation" : options.command === "publish-verify" ? "Publish result verification" : options.command === "gate-verify" ? "Release gate verification" : "Analysis";
+    const operation = options.command === "materialize" ? "Materialization" : options.command === "build" ? "Build" : options.command === "package" ? "Local packaging" : options.command === "validate" ? "Validation" : options.command === "verify" ? "Verification" : options.command === "sbom" ? "SBOM generation" : options.command === "smoke-plan" ? "Smoke plan generation" : options.command === "smoke-verify" ? "Smoke result verification" : options.command === "sign-plan" ? "Signing plan generation" : options.command === "sign-verify" ? "Signing result verification" : options.command === "scan-plan" ? "Scan plan generation" : options.command === "scan-verify" ? "Scan result verification" : options.command === "release-plan" ? "Release plan generation" : options.command === "release-verify" ? "Release evidence verification" : options.command === "publish-plan" ? "Publish plan generation" : options.command === "publish-verify" ? "Publish result verification" : options.command === "gate-verify" ? "Release gate verification" : "Analysis";
     console.error(`${operation} failed: ${error.message}`);
     process.exitCode = 1;
   }

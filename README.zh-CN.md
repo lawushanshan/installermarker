@@ -2,7 +2,7 @@
 
 [English](README.md)
 
-InstallerMarker 是一个安全的第一阶段分析工具，用于将开源 GitHub 仓库转化为跨平台安装包方案。它不承诺每个仓库都能自动变成 Windows、macOS 和 Linux 应用，而是让打包决策有明确依据、可复现且可审核。
+InstallerMarker 是一个本地源码打包器：读取开源项目目录，执行项目已有的打包命令，收集可分发文件，并输出带 SHA-256 的 `package-manifest.json`。GitHub 分析和审核流程仍然保留，但不是本地打包的必经步骤。
 
 ## 0.2 版本能力
 
@@ -13,8 +13,9 @@ InstallerMarker 是一个安全的第一阶段分析工具，用于将开源 Git
 - 分别评估 Windows x64、macOS 和 Linux x64，给出 `available`、`likely` 或 `needs_review` 状态。
 - 生成可编辑的安装配方草案，供之后的隔离构建流程使用。
 - 在不执行安装包的前提下，将已有 GitHub Release 安装包下载并校验到产物目录。
+- 使用项目已有的构建命令在本机打包，并收集当前宿主平台的可分发文件。
 
-它不会克隆目标仓库、安装其依赖或执行其代码。提交给安装器工厂的仓库链接必须始终作为不可信输入处理。
+Inspect 模式不会克隆目标仓库、安装其依赖或执行其代码。提交给安装器工厂的仓库链接必须始终作为不可信输入处理。
 
 ## 快速开始
 
@@ -42,6 +43,7 @@ npm install --global ./installermarker-0.2.8.tgz
 ```bash
 installermarker https://github.com/owner/repository
 installermarker https://github.com/owner/repository --recipe --format yaml
+installermarker package ./my-project --command "npm run dist" --artifact-dir dist --output-dir packages
 installermarker https://github.com/owner/repository --recipe --format json --output installermarker.json
 installermarker validate installermarker.json
 installermarker materialize installermarker.json --dry-run
@@ -69,6 +71,17 @@ GITHUB_TOKEN=github_pat_xxx installermarker https://github.com/owner/repository 
 ```
 
 令牌只用于本次执行中的 GitHub API 请求，不会写入磁盘。
+
+## 本地源码打包
+
+本地打包器的主入口是 `package`。它只在当前机器上构建当前宿主平台，不负责跨平台模拟，也不会替项目发明打包命令：如果标准清单中能识别 Electron Builder、Electron Forge、Tauri CLI 或 Python 打包器，会给出常见命令；其他项目请显式传入 `--command`。
+
+```bash
+installermarker package ./project --dry-run
+installermarker package ./project --command "npm run dist" --artifact-dir dist --output-dir packages
+```
+
+命令执行完成后，InstallerMarker 会从产物目录收集 `.exe`、`.msi`、`.dmg`、`.pkg`、`.AppImage`、`.deb`、`.rpm`、`.zip`、`.tar.gz` 和 `.tgz`，复制到输出目录，并生成 `package-manifest.json`。Windows、macOS 和 Linux 安装包必须分别在对应系统上构建。
 
 ## 结果说明
 

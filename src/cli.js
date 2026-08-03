@@ -7,6 +7,8 @@ const OPTION_FIELDS = [
   "workspace",
   "recipeRoot",
   "targetPlatform",
+  "buildCommand",
+  "artifactDirectory",
   "allowUnsafeLocalBuild",
   "resultFile",
   "smokeResultFile",
@@ -58,6 +60,13 @@ const COMMAND_SPECS = {
       if (!options.help && !options.targetPlatform) throw new Error("build requires --target.");
       if (!options.help && !options.dryRun && (!options.workspace || !options.outputDir)) throw new Error("build requires --workspace and --output-dir unless --dry-run is used.");
     }
+  },
+  package: {
+    inputTarget: "projectDirectory",
+    missingInput: "A local project directory is required.",
+    allowed: ["targetPlatform", "buildCommand", "artifactDirectory", "outputDir", "dryRun", "force"],
+    formats: textOnly,
+    accepts: "package accepts only --target, --command, --artifact-dir, --output-dir, --dry-run, and --force options."
   },
   validate: {
     inputTarget: "recipeFile",
@@ -131,6 +140,7 @@ function optionIsSet(options, field) {
 function assertAllowedOptions(command, options, spec) {
   const allowed = new Set(spec.allowed);
   for (const field of OPTION_FIELDS) {
+    if (field === spec.inputTarget) continue;
     if (field !== "format" && !allowed.has(field) && optionIsSet(options, field)) {
       throw new Error(spec.accepts);
     }
@@ -201,6 +211,13 @@ export function parseArguments(argumentsList) {
     } else if (argument === "--release-tag") {
       options.releaseTag = valueAfter(index, argument);
       index += 1;
+    } else if (argument === "--command") {
+      options.buildCommand = valueAfter(index, argument);
+      index += 1;
+    } else if (argument === "--artifact-dir") {
+      options.artifactDirectory ??= [];
+      options.artifactDirectory.push(valueAfter(index, argument));
+      index += 1;
     } else if (argument === "--output" || argument === "-o") {
       options.output = valueAfter(index, argument);
       index += 1;
@@ -239,6 +256,7 @@ export function usage() {
   installermarker [inspect] <github-url> [options]
   installermarker materialize <recipe.(json|yaml)> --output-dir <directory>
   installermarker build <recipe.(json|yaml)> --target <platform> --workspace <directory> --output-dir <directory> --allow-unsafe-local-build
+  installermarker package <project-directory> [--command <command>] [--target <platform>] [--artifact-dir <directory>] [--output-dir <directory>]
   installermarker validate <recipe.(json|yaml)> [--strict] [--format text|json]
   installermarker sbom <artifact-directory> [--format text|json]
   installermarker smoke-plan <artifact-directory> [--format text|json]
@@ -276,6 +294,14 @@ Build options:
   --allow-unsafe-local-build
                       Explicitly permit reviewed source code execution in this environment
   --recipe-root <dir>  Require the recipe file to be inside this directory
+
+Package options:
+  --command <command>  Command that creates the distributable package
+  --target <platform>  Defaults to the current host: windows-x64, macos-universal, or linux-x64
+  --artifact-dir <dir> Directory to search for packages; may be repeated
+  --output-dir <dir>   Directory for copied packages and package-manifest.json
+  --dry-run            Detect the project and print the package plan without executing
+  --force              Allow replacing existing files in the output directory
 
 Validate options:
   --strict             Treat unresolved warnings as a failure for CI
