@@ -19,7 +19,7 @@ All notable changes to InstallerMarker are documented here. Versions follow Sema
 - Added `publish-verify` for validating raw protected-release-service publication results against the generated publish plan without contacting release services.
 - Added a no-secret GitHub Actions workflow that runs `publish-verify` and uploads `publish-verification.json`.
 - Added structured source-build packager hints for Electron Builder, Electron Forge, Tauri CLI, Briefcase, PyInstaller, Nuitka, and cx_Freeze, with recipe propagation and documentation updates.
-- Added a local `package` command that runs a project's packaging command, collects common distributable files, and writes SHA-256 package manifests.
+- Added a local `package` command that selects packaging scripts and lockfile package managers, runs the build, collects common distributable files, and writes SHA-256 package manifests.
 - Centralized CLI command option policies to keep command growth explicit and reject ignored options consistently.
 - Shared artifact-manifest projection helpers across read-only plan commands.
 

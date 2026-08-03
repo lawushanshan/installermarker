@@ -27,6 +27,12 @@ async function readFileIfPresent(directory, name) {
 async function projectFiles(directory) {
   const names = [
     "package.json",
+    "package-lock.json",
+    "npm-shrinkwrap.json",
+    "pnpm-lock.yaml",
+    "yarn.lock",
+    "bun.lock",
+    "bun.lockb",
     "pyproject.toml",
     "requirements.txt",
     "setup.py",
@@ -41,18 +47,29 @@ async function projectFiles(directory) {
   return (await Promise.all(names.map((name) => readFileIfPresent(directory, name)))).filter(Boolean);
 }
 
-function packageScriptCommand(content) {
+function packageManagerCommand(files, manifest) {
+  const paths = new Set(files.map((file) => file.path));
+  const declared = typeof manifest.packageManager === "string" ? manifest.packageManager.split("@")[0] : null;
+  if (paths.has("pnpm-lock.yaml") || declared === "pnpm") return { install: "pnpm install --frozen-lockfile", run: "pnpm run" };
+  if (paths.has("yarn.lock") || declared === "yarn") return { install: "yarn install --frozen-lockfile", run: "yarn" };
+  if (paths.has("bun.lock") || paths.has("bun.lockb") || declared === "bun") return { install: "bun install --frozen-lockfile", run: "bun run" };
+  return { install: paths.has("package-lock.json") || paths.has("npm-shrinkwrap.json") ? "npm ci" : "npm install", run: "npm run" };
+}
+
+function packageScriptCommand(content, files, project) {
   try {
-    const scripts = JSON.parse(content).scripts ?? {};
-    return scripts.dist
-      ? "npm ci && npm run dist"
-      : scripts.make
-        ? "npm ci && npm run make"
-        : scripts.package
-          ? "npm ci && npm run package"
-          : scripts.build
-            ? "npm ci && npm run build"
-            : null;
+    const manifest = JSON.parse(content);
+    const scripts = manifest.scripts ?? {};
+    const dependencies = { ...manifest.dependencies, ...manifest.devDependencies };
+    const manager = packageManagerCommand(files, manifest);
+    if (project.kind === "tauri" && scripts.tauri) return `${manager.install} && ${manager.run} tauri -- build`;
+    const packagerScript = dependencies["electron-builder"]
+      ? Object.entries(scripts).find(([, command]) => typeof command === "string" && /(?:^|\s)electron-builder(?:\s|$)/.test(command))?.[0]
+      : dependencies["@electron-forge/cli"]
+        ? Object.entries(scripts).find(([, command]) => typeof command === "string" && /(?:^|\s)electron-forge(?:\s|$)/.test(command))?.[0]
+        : null;
+    const script = packagerScript ?? ["dist", "make", "package", "compile", "build"].find((name) => scripts[name]);
+    return script ? `${manager.install} && ${manager.run} ${script}` : null;
   } catch {
     return null;
   }
@@ -66,7 +83,8 @@ export async function inspectLocalProject(projectDirectory) {
   if (!files.length) throw new Error(`No supported project manifest found in: ${directory}`);
   const project = detectProject(files);
   const packageJson = files.find((file) => file.path === "package.json");
-  const suggestedBuildCommand = project.suggestedBuildCommand ?? (packageJson ? packageScriptCommand(packageJson.content) : null);
+  const localPackageCommand = packageJson ? packageScriptCommand(packageJson.content, files, project) : null;
+  const suggestedBuildCommand = localPackageCommand ?? project.suggestedBuildCommand;
   const artifactDirectories = project.artifactDirectories?.length
     ? project.artifactDirectories
     : project.kind === "electron"

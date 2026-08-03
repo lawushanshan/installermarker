@@ -3,7 +3,7 @@ import assert from "node:assert/strict";
 import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { collectPackageArtifacts, inspectLocalProject, packageProject } from "../src/local-build.js";
+import { inspectLocalProject, packageProject } from "../src/local-build.js";
 
 const hostTarget = process.platform === "darwin" ? "macos-universal" : process.platform === "win32" ? "windows-x64" : "linux-x64";
 const hostPackage = hostTarget === "macos-universal" ? "widget.dmg" : hostTarget === "windows-x64" ? "widget.exe" : "widget.AppImage";
@@ -13,12 +13,31 @@ test("detects a local Electron package command and artifact directories", async 
   try {
     await writeFile(join(directory, "package.json"), JSON.stringify({
       devDependencies: { electron: "^30.0.0", "electron-builder": "^24.0.0" },
-      scripts: { dist: "electron-builder" }
+      scripts: { build: "vite build", compile: "npm run build && electron-builder build" }
     }));
     const result = await inspectLocalProject(directory);
     assert.equal(result.project.kind, "electron");
-    assert.equal(result.suggestedBuildCommand, "npm ci && npm run dist");
+    assert.equal(result.suggestedBuildCommand, "npm install && npm run compile");
     assert.deepEqual(result.artifactDirectories, ["dist", "out"]);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("uses the declared package manager for local Tauri builds", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "installermarker-local-test-"));
+  try {
+    await mkdir(join(directory, "src-tauri"));
+    await writeFile(join(directory, "src-tauri", "tauri.conf.json"), "{}");
+    await writeFile(join(directory, "pnpm-lock.yaml"), "lockfileVersion: '9.0'\n");
+    await writeFile(join(directory, "package.json"), JSON.stringify({
+      packageManager: "pnpm@9.15.0",
+      devDependencies: { "@tauri-apps/cli": "^2.0.0" },
+      scripts: { build: "vite build", tauri: "tauri" }
+    }));
+    const result = await inspectLocalProject(directory);
+    assert.equal(result.project.kind, "tauri");
+    assert.equal(result.suggestedBuildCommand, "pnpm install --frozen-lockfile && pnpm run tauri -- build");
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

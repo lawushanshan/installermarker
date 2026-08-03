@@ -18,8 +18,18 @@ function architectureScore(name, targetId) {
   return 10;
 }
 
-function suggestedNpmBuildCommand(manifest) {
+function packagingScript(scripts, pattern) {
+  return Object.entries(scripts).find(([, command]) => typeof command === "string" && pattern.test(command))?.[0] ?? null;
+}
+
+function suggestedNpmBuildCommand(manifest, suggestedPackager) {
   const scripts = manifest.scripts ?? {};
+  const packagerScript = suggestedPackager === "electron-builder"
+    ? packagingScript(scripts, /(?:^|\s)electron-builder(?:\s|$)/)
+    : suggestedPackager === "electron-forge"
+      ? packagingScript(scripts, /(?:^|\s)electron-forge(?:\s|$)/)
+      : null;
+  if (packagerScript) return `npm ci && npm run ${packagerScript}`;
   return scripts.dist
     ? "npm ci && npm run dist"
     : scripts.make
@@ -41,7 +51,7 @@ function packageJsonDetails(content) {
       : names.includes("@electron-forge/cli")
         ? "electron-forge"
         : null;
-    const suggestedBuildCommand = suggestedNpmBuildCommand(manifest);
+    const suggestedBuildCommand = suggestedNpmBuildCommand(manifest, suggestedPackager);
     if (names.includes("electron") || names.includes("electron-builder") || names.includes("@electron-forge/cli")) {
       return {
         kind: "electron",
@@ -69,19 +79,11 @@ function tauriPackagerHint(content) {
   }
 }
 
-function tauriBuildScript(content) {
-  try {
-    return suggestedNpmBuildCommand(JSON.parse(content))?.includes("npm run build") ?? false;
-  } catch {
-    return false;
-  }
-}
-
 const PYTHON_PACKAGER_HINTS = [
   {
-    pattern: /\bbriefcase\b/,
+    pattern: /^\s*\[tool\.briefcase(?:\.|\])/m,
     packager: "briefcase",
-    command: "python -m pip install briefcase && briefcase build"
+    command: "python -m pip install briefcase && briefcase package"
   },
   {
     pattern: /\bpyinstaller\b/,
@@ -124,11 +126,8 @@ export function detectProject(files) {
   const file = (path) => files.find((item) => item.path === path);
   if (paths.has("src-tauri/tauri.conf.json") || paths.has("src-tauri/tauri.conf.json5")) {
     const packageJsonContent = file("package.json")?.content ?? "";
-    const packageDetails = paths.has("package.json") ? packageJsonDetails(packageJsonContent) : null;
     const suggestedPackager = paths.has("package.json") ? tauriPackagerHint(packageJsonContent) : null;
-    const suggestedBuildCommand = (packageDetails?.suggestedBuildCommand?.includes("npm run build") || tauriBuildScript(packageJsonContent))
-      ? "npm ci && npm run build && npm run tauri -- build"
-      : "npm ci && npm run tauri -- build";
+    const suggestedBuildCommand = "npm ci && npm run tauri -- build";
     return {
       kind: "tauri",
       strategy: "tauri",

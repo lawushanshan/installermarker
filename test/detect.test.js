@@ -12,11 +12,11 @@ test("detects Electron from package.json", () => {
 test("suggests Electron packaging tools when manifests name one", () => {
   const project = detectProject([{
     path: "package.json",
-    content: JSON.stringify({ devDependencies: { electron: "^30.0.0", "electron-builder": "^24.0.0" }, scripts: { dist: "electron-builder" } })
+    content: JSON.stringify({ devDependencies: { electron: "^30.0.0", "electron-builder": "^24.0.0" }, scripts: { build: "vite build", compile: "npm run build && electron-builder build" } })
   }]);
   assert.equal(project.kind, "electron");
   assert.equal(project.suggestedPackager, "electron-builder");
-  assert.equal(project.suggestedBuildCommand, "npm ci && npm run dist");
+  assert.equal(project.suggestedBuildCommand, "npm ci && npm run compile");
 });
 
 test("detects Python projects as reviewed native-build candidates", () => {
@@ -31,9 +31,9 @@ test("suggests Python packagers when manifests already name one", async (t) => {
   const cases = [
     {
       name: "briefcase in pyproject",
-      files: [{ path: "pyproject.toml", content: "[project]\nname = 'widget'\ndependencies = ['briefcase']\n" }],
+      files: [{ path: "pyproject.toml", content: "[project]\nname = 'widget'\n[tool.briefcase]\nproject_name = 'Widget'\n" }],
       packager: "briefcase",
-      command: "python -m pip install briefcase && briefcase build"
+      command: "python -m pip install briefcase && briefcase package"
     },
     {
       name: "pyinstaller in requirements",
@@ -65,6 +65,13 @@ test("suggests Python packagers when manifests already name one", async (t) => {
   }
 });
 
+test("does not treat a Briefcase dependency as an application configuration", () => {
+  const project = detectProject([{ path: "pyproject.toml", content: "[project]\nname = 'briefcase-template'\ndependencies = ['briefcase']\n" }]);
+  assert.equal(project.kind, "python");
+  assert.equal(project.suggestedPackager, undefined);
+  assert.equal(project.suggestedBuildCommand, undefined);
+});
+
 test("suggests Tauri packaging tools when manifests name the CLI", () => {
   const project = detectProject([
     { path: "package.json", content: JSON.stringify({ devDependencies: { "@tauri-apps/cli": "^2.0.0" }, scripts: { build: "vite build" } }) },
@@ -72,7 +79,7 @@ test("suggests Tauri packaging tools when manifests name the CLI", () => {
   ]);
   assert.equal(project.kind, "tauri");
   assert.equal(project.suggestedPackager, "tauri-cli");
-  assert.equal(project.suggestedBuildCommand, "npm ci && npm run build && npm run tauri -- build");
+  assert.equal(project.suggestedBuildCommand, "npm ci && npm run tauri -- build");
 });
 
 test("release assets override inferred target support", () => {
