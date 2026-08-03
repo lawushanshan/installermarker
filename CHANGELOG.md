@@ -18,7 +18,7 @@ All notable changes to InstallerMarker are documented here. Versions follow Sema
 - Publish plans now include SHA-256 hashes for required supplemental evidence files, including the artifact manifest and final release verification report.
 - Added `publish-verify` for validating raw protected-release-service publication results against the generated publish plan without contacting release services.
 - Added a no-secret GitHub Actions workflow that runs `publish-verify` and uploads `publish-verification.json`.
-- Added Python packager hints for Briefcase, PyInstaller, Nuitka, and cx_Freeze in source-build detection, with structured recipe propagation and documentation updates.
+- Added structured source-build packager hints for Electron Builder, Electron Forge, Tauri CLI, Briefcase, PyInstaller, Nuitka, and cx_Freeze, with recipe propagation and documentation updates.
 - Centralized CLI command option policies to keep command growth explicit and reject ignored options consistently.
 - Shared artifact-manifest projection helpers across read-only plan commands.
 

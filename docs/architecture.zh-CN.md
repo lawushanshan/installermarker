@@ -17,7 +17,7 @@ GitHub URL -> 只读分析 -> 评估结果与配方 -> 经审核的构建请求
 
 未来的 Worker 必须要求已经审核的配方，并验证其中固定的 commit 和输入资产摘要。每个目标平台都应该在临时环境中构建，记录构建溯源信息和 SBOM，执行安装/卸载冒烟测试，并且只能将最终产物提交给受独立保护的签名服务。
 
-源码构建 Worker 是对“默认不执行”的显式例外：它要求经过审核的命令和确认参数，验证原生宿主系统目标，在固定 commit 克隆公开源码，使用隔离 home 且不继承凭据变量运行，并且只从经过审核的目录收集平台对应安装包。如果经过审核的构建在这些目录中输出了常见 SPDX 或 CycloneDX SBOM 文档，Worker 会复制并哈希记录为构建 SBOM 证据；它不会自行生成或补全这些文档。Electron/Tauri 可以给出建议命令；当 Python 清单里识别到 Briefcase、PyInstaller、Nuitka 或 cx_Freeze 时，也可以给出结构化的打包器和命令提示，但最终命令仍需审核人确认。Go/Rust 的原生打包命令必须由审核人选择。托管 GitHub Actions 运行必须置于受保护的 `source-build` environment 后。
+源码构建 Worker 是对“默认不执行”的显式例外：它要求经过审核的命令和确认参数，验证原生宿主系统目标，在固定 commit 克隆公开源码，使用隔离 home 且不继承凭据变量运行，并且只从经过审核的目录收集平台对应安装包。如果经过审核的构建在这些目录中输出了常见 SPDX 或 CycloneDX SBOM 文档，Worker 会复制并哈希记录为构建 SBOM 证据；它不会自行生成或补全这些文档。Electron/Tauri 清单在识别到 Electron Builder、Electron Forge 或 Tauri CLI 时，可以给出结构化的打包器和命令提示；Python 清单在识别到 Briefcase、PyInstaller、Nuitka 或 cx_Freeze 时也会这样做，但最终命令仍需审核人确认。Go/Rust 的原生打包命令必须由审核人选择。托管 GitHub Actions 运行必须置于受保护的 `source-build` environment 后。
 
 当前落盘 Worker 的范围刻意保持很小。它会验证资产所属仓库、平台对应的安装包扩展名、声明大小、单文件 1 GiB 上限、HTTPS 重定向目标和 SHA-256。所有下载都保留在随机 staging 目录中，直到选中的资产全部通过验证；它拒绝覆盖已有文件，并生成由 `schema/artifact-manifest.schema.json` 描述的 `artifacts.json`。
 

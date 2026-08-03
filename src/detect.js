@@ -18,33 +18,62 @@ function architectureScore(name, targetId) {
   return 10;
 }
 
+function suggestedNpmBuildCommand(manifest) {
+  const scripts = manifest.scripts ?? {};
+  return scripts.dist
+    ? "npm ci && npm run dist"
+    : scripts.make
+      ? "npm ci && npm run make"
+      : scripts.package
+        ? "npm ci && npm run package"
+        : scripts.build
+          ? "npm ci && npm run build"
+          : null;
+}
+
 function packageJsonDetails(content) {
   try {
     const manifest = JSON.parse(content);
     const dependencies = { ...manifest.dependencies, ...manifest.devDependencies };
     const names = Object.keys(dependencies);
-    const scripts = manifest.scripts ?? {};
-    const suggestedBuildCommand = scripts.dist
-      ? "npm ci && npm run dist"
-      : scripts.make
-        ? "npm ci && npm run make"
-        : scripts.package
-          ? "npm ci && npm run package"
-          : scripts.build
-            ? "npm ci && npm run build"
-            : null;
+    const suggestedPackager = names.includes("electron-builder")
+      ? "electron-builder"
+      : names.includes("@electron-forge/cli")
+        ? "electron-forge"
+        : null;
+    const suggestedBuildCommand = suggestedNpmBuildCommand(manifest);
     if (names.includes("electron") || names.includes("electron-builder") || names.includes("@electron-forge/cli")) {
       return {
         kind: "electron",
         strategy: "electron",
         evidence: "package.json declares Electron tooling",
         artifactDirectories: ["dist", "out"],
+        ...(suggestedPackager ? { suggestedPackager } : {}),
         suggestedBuildCommand
       };
     }
     return { kind: "node", strategy: "node", evidence: "package.json found" };
   } catch {
     return { kind: "node", strategy: "node", evidence: "package.json found but could not be parsed" };
+  }
+}
+
+function tauriPackagerHint(content) {
+  try {
+    const manifest = JSON.parse(content);
+    const dependencies = { ...manifest.dependencies, ...manifest.devDependencies };
+    const names = Object.keys(dependencies);
+    return names.includes("@tauri-apps/cli") ? "tauri-cli" : null;
+  } catch {
+    return null;
+  }
+}
+
+function tauriBuildScript(content) {
+  try {
+    return suggestedNpmBuildCommand(JSON.parse(content))?.includes("npm run build") ?? false;
+  } catch {
+    return false;
   }
 }
 
@@ -94,8 +123,10 @@ export function detectProject(files) {
   const paths = new Set(files.map((file) => file.path));
   const file = (path) => files.find((item) => item.path === path);
   if (paths.has("src-tauri/tauri.conf.json") || paths.has("src-tauri/tauri.conf.json5")) {
-    const packageDetails = paths.has("package.json") ? packageJsonDetails(file("package.json")?.content ?? "") : null;
-    const suggestedBuildCommand = packageDetails?.suggestedBuildCommand?.includes("npm run build")
+    const packageJsonContent = file("package.json")?.content ?? "";
+    const packageDetails = paths.has("package.json") ? packageJsonDetails(packageJsonContent) : null;
+    const suggestedPackager = paths.has("package.json") ? tauriPackagerHint(packageJsonContent) : null;
+    const suggestedBuildCommand = (packageDetails?.suggestedBuildCommand?.includes("npm run build") || tauriBuildScript(packageJsonContent))
       ? "npm ci && npm run build && npm run tauri -- build"
       : "npm ci && npm run tauri -- build";
     return {
@@ -103,6 +134,7 @@ export function detectProject(files) {
       strategy: "tauri",
       evidence: "Tauri configuration found",
       artifactDirectories: ["src-tauri/target/release/bundle"],
+      ...(suggestedPackager ? { suggestedPackager } : {}),
       suggestedBuildCommand
     };
   }

@@ -49,13 +49,28 @@ test("creates source-build targets for detected Electron projects", () => {
   const report = {
     source: { url: "https://github.com/acme/widget", defaultBranch: "main", commitSha: "a".repeat(40) },
     application: { name: "widget" },
-    analysis: { project: { kind: "electron", strategy: "electron", artifactDirectories: ["dist", "out"], suggestedBuildCommand: "npm ci && npm run dist" } },
+    analysis: { project: { kind: "electron", strategy: "electron", artifactDirectories: ["dist", "out"], suggestedPackager: "electron-builder", suggestedBuildCommand: "npm ci && npm run dist" } },
     targets: [{ id: "windows-x64", status: "likely", artifact: null }]
   };
   const recipe = createRecipe(report);
   assert.equal(recipe.targets[0].packaging, "build-electron");
   assert.deepEqual(recipe.build.artifactDirectories, ["dist", "out"]);
+  assert.equal(recipe.build.suggestedPackager, "electron-builder");
   assert.equal(recipe.build.suggestedCommand, "npm ci && npm run dist");
+});
+
+test("creates Tauri recipes with suggested packager commands when available", () => {
+  const report = {
+    source: { url: "https://github.com/acme/widget", defaultBranch: "main", commitSha: "a".repeat(40) },
+    application: { name: "widget" },
+    analysis: { project: { kind: "tauri", strategy: "tauri", artifactDirectories: ["src-tauri/target/release/bundle"], suggestedPackager: "tauri-cli", suggestedBuildCommand: "npm ci && npm run build && npm run tauri -- build" } },
+    targets: [{ id: "linux-x64", status: "likely", artifact: null }]
+  };
+  const recipe = createRecipe(report);
+  assert.equal(recipe.build.strategy, "tauri");
+  assert.equal(recipe.build.suggestedPackager, "tauri-cli");
+  assert.equal(recipe.build.suggestedCommand, "npm ci && npm run build && npm run tauri -- build");
+  assert.equal(recipe.review.some((item) => item.includes("Review the suggested tauri-cli build command")), true);
 });
 
 test("creates Python recipes with suggested packager commands when available", () => {

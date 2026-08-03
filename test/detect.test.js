@@ -9,6 +9,16 @@ test("detects Electron from package.json", () => {
   assert.deepEqual(project.artifactDirectories, ["dist", "out"]);
 });
 
+test("suggests Electron packaging tools when manifests name one", () => {
+  const project = detectProject([{
+    path: "package.json",
+    content: JSON.stringify({ devDependencies: { electron: "^30.0.0", "electron-builder": "^24.0.0" }, scripts: { dist: "electron-builder" } })
+  }]);
+  assert.equal(project.kind, "electron");
+  assert.equal(project.suggestedPackager, "electron-builder");
+  assert.equal(project.suggestedBuildCommand, "npm ci && npm run dist");
+});
+
 test("detects Python projects as reviewed native-build candidates", () => {
   const project = detectProject([{ path: "pyproject.toml", content: "[project]\nname = 'widget'\n" }]);
   assert.equal(project.kind, "python");
@@ -53,6 +63,16 @@ test("suggests Python packagers when manifests already name one", async (t) => {
       assert.equal(project.suggestedBuildCommand, command);
     });
   }
+});
+
+test("suggests Tauri packaging tools when manifests name the CLI", () => {
+  const project = detectProject([
+    { path: "package.json", content: JSON.stringify({ devDependencies: { "@tauri-apps/cli": "^2.0.0" }, scripts: { build: "vite build" } }) },
+    { path: "src-tauri/tauri.conf.json", content: "{}" }
+  ]);
+  assert.equal(project.kind, "tauri");
+  assert.equal(project.suggestedPackager, "tauri-cli");
+  assert.equal(project.suggestedBuildCommand, "npm ci && npm run build && npm run tauri -- build");
 });
 
 test("release assets override inferred target support", () => {
