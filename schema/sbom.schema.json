@@ -1,0 +1,127 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:installermarker:sbom:1",
+  "title": "InstallerMarker artifact SBOM",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "bomFormat", "generatedAt", "source", "manifest", "components"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "bomFormat": { "const": "InstallerMarker" },
+    "generatedAt": { "type": "string", "format": "date-time" },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "commit"],
+      "properties": {
+        "repository": { "type": "string", "pattern": "^https://github\\.com/" },
+        "commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+        "license": { "type": "string", "minLength": 1 }
+      }
+    },
+    "manifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": { "enum": ["artifacts.json", "build-artifacts.json"] },
+        "build": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["strategy", "command", "platform"],
+          "properties": {
+            "strategy": { "enum": ["electron", "tauri", "go-native", "rust-native", "python-native"] },
+            "command": { "type": "string", "minLength": 1 },
+            "platform": { "enum": ["windows-x64", "macos-universal", "linux-x64"] }
+          }
+        },
+        "provenance": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["startedAt", "finishedAt", "durationMs", "runner"],
+          "properties": {
+            "startedAt": { "type": "string", "format": "date-time" },
+            "finishedAt": { "type": "string", "format": "date-time" },
+            "durationMs": { "type": "integer", "minimum": 0 },
+            "runner": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["nodeVersion", "platform", "arch"],
+              "properties": {
+                "nodeVersion": { "type": "string", "minLength": 1 },
+                "platform": { "type": "string", "minLength": 1 },
+                "arch": { "type": "string", "minLength": 1 }
+              }
+            }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": { "name": { "const": "build-artifacts.json" } },
+            "required": ["name"]
+          },
+          "then": {
+            "required": ["build", "provenance"],
+            "properties": {
+              "build": {},
+              "provenance": {}
+            }
+          }
+        }
+      ]
+    },
+    "components": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["platform", "name", "size", "sha256", "provenance"],
+        "properties": {
+          "platform": { "enum": ["windows-x64", "macos-universal", "linux-x64"] },
+          "name": { "type": "string", "pattern": "^[^\\\\/]+$" },
+          "size": { "type": "integer", "minimum": 1 },
+          "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "provenance": {
+            "oneOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["sourceUrl"],
+                "properties": {
+                  "sourceUrl": { "type": "string", "format": "uri" }
+                }
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["sourcePath"],
+                "properties": {
+                  "sourcePath": { "type": "string", "minLength": 1 }
+                }
+              }
+            ]
+          }
+        }
+      }
+    },
+    "documents": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "format", "size", "sha256", "sourcePath"],
+        "properties": {
+          "name": { "type": "string", "pattern": "^[^\\\\/]+$" },
+          "format": { "enum": ["cyclonedx", "spdx", "unknown"] },
+          "size": { "type": "integer", "minimum": 1 },
+          "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "sourcePath": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  }
+}

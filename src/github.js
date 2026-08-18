@@ -14,6 +14,18 @@ export function createGitHubClient(fetchImplementation, token, { timeoutMs = 15_
   };
   if (token) headers.Authorization = `Bearer ${token}`;
 
+  // 将中止/超时形态的错误（含包装在 cause 链中的）统一转换为可操作的提示信息
+  function timeoutError(error, path) {
+    let current = error;
+    while (current) {
+      if (current.name === "TimeoutError" || current.name === "AbortError") {
+        return new Error(`GitHub API request timed out for ${path} after ${timeoutMs}ms. Raise INSTALLERMARKER_TIMEOUT_MS on slow networks.`);
+      }
+      current = current.cause;
+    }
+    return error;
+  }
+
   async function request(path, optional = false) {
     let response;
     try {
@@ -22,17 +34,22 @@ export function createGitHubClient(fetchImplementation, token, { timeoutMs = 15_
         signal: AbortSignal.timeout(timeoutMs)
       });
     } catch (error) {
-      if (error.name === "TimeoutError" || error.name === "AbortError") {
-        throw new Error(`GitHub API request timed out for ${path}`);
-      }
-      throw error;
+      throw timeoutError(error, path);
     }
     if (optional && response.status === 404) return null;
     if (!response.ok) {
-      const body = await response.text();
+      // 响应头已到达但 body 读取仍可能因超时中止，因此同样纳入超时包装
+      let body = "";
+      try {
+        body = await response.text();
+      } catch (error) {
+        throw timeoutError(error, path);
+      }
       throw new Error(`GitHub API ${response.status} for ${path}${body ? `: ${body.slice(0, 160)}` : ""}`);
     }
-    return response.json();
+    return response.json().catch((error) => {
+      throw timeoutError(error, path);
+    });
   }
 
   return {

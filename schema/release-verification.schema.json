@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:installermarker:release-verification:1",
+  "title": "InstallerMarker release evidence verification",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "generatedAt", "valid", "source", "manifest", "artifactCount", "sbomDocumentCount", "gates", "evidence", "checks", "errors", "diagnostics"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "generatedAt": { "type": "string", "format": "date-time" },
+    "valid": { "type": "boolean" },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "commit"],
+      "properties": {
+        "repository": { "type": "string", "pattern": "^https://github\\.com/" },
+        "commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+        "license": { "type": "string", "minLength": 1 }
+      }
+    },
+    "manifest": { "enum": ["artifacts.json", "build-artifacts.json"] },
+    "artifactCount": { "type": "integer", "minimum": 1 },
+    "sbomDocumentCount": { "type": "integer", "minimum": 0 },
+    "gates": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "status", "summary"],
+        "properties": {
+          "name": { "enum": ["verify-artifacts", "sbom", "smoke-test", "artifact-scan", "signing"] },
+          "status": { "enum": ["passed", "failed"] },
+          "summary": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["verification", "sbom", "smokeVerification", "scanVerification", "signVerification"],
+      "properties": {
+        "verification": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["valid", "manifest", "artifactCount"],
+          "properties": {
+            "valid": { "type": "boolean" },
+            "manifest": { "enum": ["artifacts.json", "build-artifacts.json"] },
+            "artifactCount": { "type": "integer", "minimum": 1 }
+          }
+        },
+        "sbom": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["componentCount", "documentCount"],
+          "properties": {
+            "componentCount": { "type": "integer", "minimum": 1 },
+            "documentCount": { "type": "integer", "minimum": 0 }
+          }
+        },
+        "smokeVerification": { "type": "object" },
+        "scanVerification": { "type": "object" },
+        "signVerification": { "type": "object" }
+      }
+    },
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["name", "status", "message"],
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "status": { "enum": ["passed", "failed"] },
+          "message": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "errors": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/diagnostic" }
+    },
+    "diagnostics": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/diagnostic" }
+    }
+  },
+  "$defs": {
+    "diagnostic": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["severity", "code", "path", "message"],
+      "properties": {
+        "severity": { "enum": ["error"] },
+        "code": { "type": "string", "minLength": 1 },
+        "path": { "type": "string", "minLength": 1 },
+        "message": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

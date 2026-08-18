@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:installermarker:package-manifest:1",
+  "title": "InstallerMarker local package manifest",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "source", "project", "build", "artifacts"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["path"],
+      "properties": {
+        "path": { "type": "string", "minLength": 1 }
+      }
+    },
+    "project": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "strategy"],
+      "properties": {
+        "kind": { "enum": ["electron", "tauri", "node", "go", "rust", "python", "java", "container", "unknown"] },
+        "strategy": { "enum": ["electron", "tauri", "node", "go-native", "rust-native", "python-native", "java-runtime", "container-service", "manual"] }
+      }
+    },
+    "build": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["command", "target", "artifactDirectories"],
+      "properties": {
+        "command": { "type": "string", "minLength": 1 },
+        "target": { "enum": ["windows-x64", "macos-universal", "linux-x64"] },
+        "artifactDirectories": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "type": "string", "minLength": 1 }
+        }
+      }
+    },
+    "artifacts": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["target", "name", "size", "sha256", "sourcePath"],
+        "properties": {
+          "target": { "enum": ["windows-x64", "macos-universal", "linux-x64"] },
+          "name": { "type": "string", "pattern": "^[^\\\\/]+$" },
+          "size": { "type": "integer", "minimum": 1 },
+          "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+          "sourcePath": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  }
+}

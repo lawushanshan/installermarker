@@ -9,12 +9,77 @@ test("detects Electron from package.json", () => {
   assert.deepEqual(project.artifactDirectories, ["dist", "out"]);
 });
 
+test("suggests Electron packaging tools when manifests name one", () => {
+  const project = detectProject([{
+    path: "package.json",
+    content: JSON.stringify({ devDependencies: { electron: "^30.0.0", "electron-builder": "^24.0.0" }, scripts: { build: "vite build", compile: "npm run build && electron-builder build" } })
+  }]);
+  assert.equal(project.kind, "electron");
+  assert.equal(project.suggestedPackager, "electron-builder");
+  assert.equal(project.suggestedBuildCommand, "npm ci && npm run compile");
+});
+
 test("detects Python projects as reviewed native-build candidates", () => {
   const project = detectProject([{ path: "pyproject.toml", content: "[project]\nname = 'widget'\n" }]);
   assert.equal(project.kind, "python");
   assert.equal(project.strategy, "python-native");
   assert.deepEqual(project.artifactDirectories, ["dist", "build"]);
   assert.deepEqual(classifyTargets([], project).map((target) => target.status), ["likely", "likely", "likely"]);
+});
+
+test("suggests Python packagers when manifests already name one", async (t) => {
+  const cases = [
+    {
+      name: "briefcase in pyproject",
+      files: [{ path: "pyproject.toml", content: "[project]\nname = 'widget'\n[tool.briefcase]\nproject_name = 'Widget'\n" }],
+      packager: "briefcase",
+      command: "python -m pip install briefcase && briefcase package"
+    },
+    {
+      name: "pyinstaller in requirements",
+      files: [{ path: "requirements.txt", content: "PyInstaller==6.16.0\n" }],
+      packager: "pyinstaller",
+      command: "python -m pip install pyinstaller && pyinstaller TODO: confirm executable entrypoint"
+    },
+    {
+      name: "nuitka in setup.py",
+      files: [{ path: "setup.py", content: "install_requires=['Nuitka']\n" }],
+      packager: "nuitka",
+      command: "python -m pip install nuitka && python -m nuitka --standalone TODO: confirm executable entrypoint"
+    },
+    {
+      name: "cx_Freeze in pyproject",
+      files: [{ path: "pyproject.toml", content: "[project]\nname = 'widget'\ndependencies = ['Cx_Freeze']\n" }],
+      packager: "cx_Freeze",
+      command: "python -m pip install cx_Freeze && python setup.py build"
+    }
+  ];
+
+  for (const { name, files, packager, command } of cases) {
+    await t.test(name, () => {
+      const project = detectProject(files);
+      assert.equal(project.kind, "python");
+      assert.equal(project.suggestedPackager, packager);
+      assert.equal(project.suggestedBuildCommand, command);
+    });
+  }
+});
+
+test("does not treat a Briefcase dependency as an application configuration", () => {
+  const project = detectProject([{ path: "pyproject.toml", content: "[project]\nname = 'briefcase-template'\ndependencies = ['briefcase']\n" }]);
+  assert.equal(project.kind, "python");
+  assert.equal(project.suggestedPackager, undefined);
+  assert.equal(project.suggestedBuildCommand, undefined);
+});
+
+test("suggests Tauri packaging tools when manifests name the CLI", () => {
+  const project = detectProject([
+    { path: "package.json", content: JSON.stringify({ devDependencies: { "@tauri-apps/cli": "^2.0.0" }, scripts: { build: "vite build" } }) },
+    { path: "src-tauri/tauri.conf.json", content: "{}" }
+  ]);
+  assert.equal(project.kind, "tauri");
+  assert.equal(project.suggestedPackager, "tauri-cli");
+  assert.equal(project.suggestedBuildCommand, "npm ci && npm run tauri -- build");
 });
 
 test("release assets override inferred target support", () => {

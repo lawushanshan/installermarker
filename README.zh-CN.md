@@ -1,20 +1,23 @@
 # InstallerMarker
 
+[![CI](https://github.com/lawushanshan/installermarker/actions/workflows/ci.yml/badge.svg)](https://github.com/lawushanshan/installermarker/actions/workflows/ci.yml)
+
 [English](README.md)
 
-InstallerMarker 是一个安全的第一阶段分析工具，用于将开源 GitHub 仓库转化为跨平台安装包方案。它不承诺每个仓库都能自动变成 Windows、macOS 和 Linux 应用，而是让打包决策有明确依据、可复现且可审核。
+InstallerMarker 是一个本地源码打包器：读取开源项目目录，执行项目已有的打包命令，收集可分发文件，并输出带 SHA-256 的 `package-manifest.json`。GitHub 分析和审核流程仍然保留，但不是本地打包的必经步骤。
 
 ## 0.2 版本能力
 
 - 接受公开 GitHub 仓库链接。
-- 读取仓库元数据、Release 资产，以及少量标准构建清单。
+- 读取仓库元数据、Release 资产，以及少量标准构建清单，并从受支持的根清单中提取声明式依赖。
 - 只解析一次默认分支，并将分析和配方固定到不可变的 commit SHA。
 - 识别 Electron、Tauri、Go、Rust、Python、Java、Node.js 和容器服务等常见项目类型。
 - 分别评估 Windows x64、macOS 和 Linux x64，给出 `available`、`likely` 或 `needs_review` 状态。
 - 生成可编辑的安装配方草案，供之后的隔离构建流程使用。
 - 在不执行安装包的前提下，将已有 GitHub Release 安装包下载并校验到产物目录。
+- 使用项目已有的构建命令在本机打包，并收集当前宿主平台的可分发文件。
 
-它不会克隆目标仓库、安装其依赖或执行其代码。提交给安装器工厂的仓库链接必须始终作为不可信输入处理。
+Inspect 模式不会克隆目标仓库、安装其依赖或执行其代码。提交给安装器工厂的仓库链接必须始终作为不可信输入处理。
 
 ## 快速开始
 
@@ -42,12 +45,25 @@ npm install --global ./installermarker-0.2.8.tgz
 ```bash
 installermarker https://github.com/owner/repository
 installermarker https://github.com/owner/repository --recipe --format yaml
+installermarker package ./my-project --command "npm run dist" --artifact-dir dist --output-dir packages
 installermarker https://github.com/owner/repository --recipe --format json --output installermarker.json
 installermarker validate installermarker.json
 installermarker materialize installermarker.json --dry-run
 installermarker materialize installermarker.json --output-dir artifacts/v1
 installermarker materialize installermarker.json --target linux-x64 --output-dir artifacts/linux
 installermarker verify artifacts/v1
+installermarker sbom artifacts/v1 --format json > sbom.json
+installermarker smoke-plan artifacts/v1 --format json > smoke-plan.json
+installermarker smoke-verify artifacts/v1 --result smoke-result.json --format json > smoke-verification.json
+installermarker sign-plan artifacts/v1 --format json > sign-plan.json
+installermarker sign-verify artifacts/v1 --result sign-result.json --format json > sign-verification.json
+installermarker scan-plan artifacts/v1 --format json > scan-plan.json
+installermarker scan-verify artifacts/v1 --result scan-result.json --format json > scan-verification.json
+installermarker release-plan artifacts/v1 --format json > release-plan.json
+installermarker release-verify artifacts/v1 --smoke-result smoke-result.json --scan-result scan-result.json --sign-result sign-result.json --format json > release-verification.json
+installermarker publish-plan artifacts/v1 --release-verification release-verification.json --release-tag v1.0.0 --format json > publish-plan.json
+installermarker publish-verify artifacts/v1 --release-verification release-verification.json --release-tag v1.0.0 --result publish-result.json --format json > publish-verification.json
+installermarker gate-verify release-gate-plans --format json > gate-verification.json
 ```
 
 访问私有仓库，或希望获得更高 GitHub API 限额时，可以提供只读仓库权限的令牌：
@@ -57,6 +73,33 @@ GITHUB_TOKEN=github_pat_xxx installermarker https://github.com/owner/repository 
 ```
 
 令牌只用于本次执行中的 GitHub API 请求，不会写入磁盘。
+
+慢速网络可以通过 `INSTALLERMARKER_TIMEOUT_MS` 调高 GitHub API 请求超时（默认 15000 毫秒）：
+
+```bash
+INSTALLERMARKER_TIMEOUT_MS=60000 installermarker https://github.com/owner/repository --recipe
+```
+
+`materialize` 下载安装包时也可以通过 `INSTALLERMARKER_DOWNLOAD_TIMEOUT_MS` 调高单个文件的下载超时（默认 600000 毫秒）。
+
+## 示例
+
+查看 [examples/](examples/) 目录获取详细使用示例：
+
+- [基础使用](examples/basic-usage.md) - 使用真实项目的完整工作流程
+- [CI 集成](examples/ci-integration.md) - GitHub Actions 自动化
+- [故障排除](examples/troubleshooting.md) - 常见问题及解决方案
+
+## 本地源码打包
+
+本地打包器的主入口是 `package`。它只在当前机器上构建当前宿主平台，不负责跨平台模拟，也不会替项目发明打包命令：如果标准清单中能识别 Electron Builder、Electron Forge、Tauri CLI 或 Python 打包器，会给出常见命令；其他项目请显式传入 `--command`。
+
+```bash
+installermarker package ./project --dry-run
+installermarker package ./project --command "npm run dist" --artifact-dir dist --output-dir packages
+```
+
+命令执行完成后，InstallerMarker 会从产物目录收集 `.exe`、`.msi`、`.dmg`、`.pkg`、`.AppImage`、`.deb`、`.rpm`、`.zip`、`.tar.gz` 和 `.tgz`，复制到输出目录，并生成 `package-manifest.json`。Windows、macOS 和 Linux 安装包必须分别在对应系统上构建。
 
 ## 结果说明
 
@@ -74,11 +117,25 @@ GITHUB_TOKEN=github_pat_xxx installermarker https://github.com/owner/repository 
 
 落盘前请运行 `validate`。它会将 Schema 错误和仍待人工确认的警告分开报告。`validate --strict` 遇到错误或警告都会返回非零状态，适合在 CI 中作为门禁使用。
 
+现在的分析报告还会包含只读的依赖清单，覆盖 `package.json`、`go.mod`、`Cargo.toml` 和 `requirements.txt` 等受支持的根清单，也会记录 `package-lock.json`、`go.sum`、`Cargo.lock` 等锁文件存在性，并附带一个小型风险扫描，用来标出明显的 file / VCS / URL / 额外索引引用。它只是元数据扫描，不会安装或执行任何依赖；锁文件仅从仓库树中检测存在性，不会下载完整内容。
+
 当前 `materialize` 只接受公开安装包：URL 必须属于源仓库的 GitHub Releases，并且配方中必须存在 SHA-256。它会把选中的资产流式下载到临时目录，校验声明大小和摘要后，再连同 `artifacts.json` 来源清单一起提交到产物目录。使用 `--target` 可只选择一个平台；省略该参数则落盘配方中全部可复用安装包。它不会打开或安装这些文件，也绝不会覆盖已有产物。
 
-使用 `verify <产物目录>` 可离线重新检查已有的 `artifacts.json` 或 `build-artifacts.json` 目录。它会验证清单格式、文件名、字节大小和 SHA-256，不会执行任何安装包。
+使用 `verify <产物目录>` 可离线重新检查已有的 `artifacts.json` 或 `build-artifacts.json` 目录。它会验证安装包以及构建产出 SBOM 文档的清单格式、文件名、字节大小和 SHA-256，不会执行任何安装包。
+使用 `sbom <产物目录>` 可以从已验证的清单派生只读的组件清单。对于源码构建输出，它会把已验证的构建产出 SBOM 文档作为证据带出。它同样不会执行或安装任何产物。
+使用 `smoke-plan <产物目录>` 可以为每个已验证安装包生成只读的安装、启动和卸载检查计划。它不会执行计划，也不会运行安装器。
+使用 `smoke-verify <产物目录> --result <smoke-result.json>` 可以把外部隔离 smoke runner 返回的结果与已验证产物目录及生成的 smoke 计划进行校验。它会检查源、清单、产物哈希、安装器类型、目标宿主、步骤名称、步骤状态和汇总结论，但不会安装、启动、卸载或执行任何产物。
+使用 `sign-plan <产物目录>` 可以为独立受保护的签名服务生成只读签名请求计划。它不会访问证书、签名产物、执行公证或发布 Release。
+使用 `sign-verify <产物目录> --result <sign-result.json>` 可以把外部受保护签名服务返回的结果与已验证产物目录及生成的签名计划进行校验。它会检查源、清单、产物哈希、签名 profile、阶段名称、阶段状态和汇总结论，但不会访问凭据、签名产物、执行公证或发布 Release。
+使用 `scan-plan <产物目录>` 可以生成只读的恶意软件、信誉和 SBOM 关联扫描请求计划。它不会执行扫描器、上传产物或访问信誉服务。
+使用 `scan-verify <产物目录> --result <scan-result.json>` 可以把外部批准扫描器返回的结果与已验证产物目录进行校验。它会检查源、清单、产物哈希、阶段状态和汇总结论，但不会调用扫描器或上传产物。
+使用 `release-plan <产物目录>` 可以生成单个只读发布门禁计划，汇总验证证据、SBOM、冒烟测试计划、扫描计划和签名计划。它不会执行产物、运行冒烟测试、调用扫描器、签名产物、执行公证或发布 Release。
+使用 `release-verify <产物目录> --smoke-result <smoke-result.json> --scan-result <scan-result.json> --sign-result <sign-result.json>` 可以重新验证本地产物，并把外部 smoke、扫描和签名原始结果聚合成最终发布证据报告。它会在本地重新运行三类结果校验器，不信任预先生成的校验报告。
+使用 `publish-plan <产物目录> --release-verification <release-verification.json> --release-tag <tag>` 可以在最终发布证据通过后生成只读发布计划。它会校验最终证据与已验证产物目录一致，并输出草稿 Release 资产检查清单，其中包含安装包和补充证据文件的 SHA-256 哈希；但不会上传产物、创建 Release、发布包、签名产物、执行公证或访问外部服务。
+使用 `publish-verify <产物目录> --release-verification <release-verification.json> --release-tag <tag> --result <publish-result.json>` 可以在受保护发布服务返回原始发布结果后进行校验。它会在本地重建发布计划，并检查来源、清单、发布标签、草稿状态、Release URL、资产文件名、资产类型、SHA-256 哈希和汇总结论，但不会访问 GitHub Releases，也不会发布任何内容。
+使用 `gate-verify <发布门禁目录>` 可以校验 CI 生成的发布门禁 JSON 包。它会检查 `verify.json`、`sbom.json`、`smoke-plan.json`、`scan-plan.json`、`sign-plan.json` 和 `release-plan.json` 是否存在且内部事实一致。
 
-对于尚未发布安装包的 Electron 和 Tauri 项目，请审核生成的源码构建配方、填写经过审核的 `build.command`，然后分别在原生目标系统上构建。Go、Rust 和 Python 项目会生成 `build-native` 目标：需先选择并审核原生打包命令与产物目录。Python 默认使用 `dist` 和 `build` 作为候选目录，但入口和打包器仍必须人工确认。Worker 只接受 Windows `.msi/.exe`、macOS `.dmg/.pkg` 和 Linux `.AppImage/.deb/.rpm` 包，详见[源码构建说明](docs/source-build.zh-CN.md)。
+对于尚未发布安装包的 Electron 和 Tauri 项目，请审核生成的源码构建配方、填写经过审核的 `build.command`，然后分别在原生目标系统上构建。Go、Rust 和 Python 项目会生成 `build-native` 目标：需先选择并审核原生打包命令与产物目录。Electron/Tauri 清单在识别到 Electron Builder、Electron Forge 或 Tauri CLI 时，可以给出结构化的 `build.suggestedPackager` 和 `build.suggestedCommand` 提示；Python 清单在识别到 Briefcase、PyInstaller、Nuitka 或 cx_Freeze 时也会这样做。入口和最终命令仍必须人工确认。Worker 只接受 Windows `.msi/.exe`、macOS `.dmg/.pkg` 和 Linux `.AppImage/.deb/.rpm` 包。如果已审核构建命令在配置的产物目录中输出了常见 SPDX 或 CycloneDX SBOM 文档，Worker 会复制并哈希记录为构建 SBOM 证据；它不会自行生成这些文档。详见[源码构建说明](docs/source-build.zh-CN.md)。
 
 ## 项目发布与维护
 
@@ -99,7 +156,7 @@ git push -u origin main
 
 ## 范围与路线图
 
-0.2 版本包含静态分析、固定 commit 的配方生成、已有安装包的校验落盘，以及经过审核的 Electron/Tauri、Go、Rust、Python 源码构建路径。下一阶段将增加约定式打包适配器、SBOM、恶意软件与依赖扫描、安装/卸载冒烟测试，以及与不可信构建环境隔离的签名服务。
+0.2 版本包含静态分析、固定 commit 的配方生成、已有安装包的校验落盘、已验证产物目录的只读 SBOM 投影、只读 smoke-test 计划生成、外部隔离 smoke 结果校验、只读签名请求计划、外部受保护签名结果校验、只读产物扫描请求计划、外部批准扫描器结果校验、最终发布证据聚合、只读发布请求计划和 publish-plan 工作流生成、外部受保护发布结果校验和 publish-verification 工作流生成、只读发布门禁计划、发布门禁包一致性校验，以及带构建 provenance 和构建产出 SBOM 证据采集的 Electron/Tauri、Go、Rust、Python 源码构建路径。下一阶段将增加约定式打包适配器、更完整的构建期依赖 SBOM 生成、隔离的 smoke-test 执行集成、批准扫描器执行集成，以及受保护的签名服务。
 
 Windows Authenticode 证书，以及 macOS Developer ID 和公证凭据，绝不能暴露给仓库的构建脚本。
 
@@ -107,6 +164,6 @@ Windows Authenticode 证书，以及 macOS Developer ID 和公证凭据，绝不
 
 版本变更见 [CHANGELOG.md](CHANGELOG.md)。
 
-需要在仓库中无密钥执行落盘任务时，请参阅 [GitHub Actions Worker 说明](docs/github-actions.zh-CN.md)。
+需要在仓库中无密钥执行落盘、发布门禁、发布证据、发布计划和发布结果校验任务时，请参阅 [GitHub Actions Worker 说明](docs/github-actions.zh-CN.md)。
 
 需要在受保护环境中完成 Windows、macOS、Linux 原生源码构建时，请参阅 [源码构建说明](docs/source-build.zh-CN.md)。

@@ -1,0 +1,63 @@
+2026-08-17 目标推进：可用性与可靠性第一轮改进
+
+- CI 测试矩阵新增 Node 24（当前 LTS），修改了 .github/workflows/ci.yml，矩阵由 [20, 22] 扩展为 [20, 22, 24]
+- README.md 与 README.zh-CN.md 顶部新增 CI 状态徽章，链接指向 ci.yml 工作流
+- 完成项目健康基线验证：语法检查通过、172 个单元测试全部通过、CLI 端到端实测可用（--version/--help/退出码/package --dry-run 均正常）
+
+2026-08-17 目标推进：可靠性第二轮改进（补齐产物契约）
+
+- 新增 schema/package-manifest.schema.json，为 package 命令的 package-manifest.json 产物定义 JSON Schema 契约（此前是唯一没有 schema 的产物文件），字段含 source/project/build/artifacts，kind、strategy、target 等取值与 detect.js 值域对齐
+- test/local-build.test.js 新增"local package manifests satisfy the schema contract"测试，用 Ajv（draft 2020-12 strict 模式）同时校验内存对象与落盘文件，与项目其他产物的双向契约模式保持一致
+- CHANGELOG.md Unreleased 段落补充对应条目
+- 回归验证：语法检查通过、173 个单元测试全部通过
+
+2026-08-17 目标推进：可用性第三轮改进（真实环境端到端验证 + 超时修复）
+
+- 真实网络实测发现可靠性 bug：GitHub API 返回 504 且 body 传输缓慢时，response.text() 读取 body 触发超时中止，但该调用位于 try/catch 之外，用户看到的是原生错误"The operation was aborted due to timeout"而非可操作的提示。修复了 src/github.js：将 body 读取（text/json）统一纳入超时包装，并遍历 cause 错误链识别 TimeoutError/AbortError，错误信息包含超时毫秒数与 INSTALLERMARKER_TIMEOUT_MS 调整指引
+- 新增 INSTALLERMARKER_TIMEOUT_MS 环境变量（跟随 GITHUB_TOKEN 先例，不新增 CLI 选项）：src/cli.js 解析（非法值立即报错）、src/analyze.js 透传、bin/installermarker.js 传入，usage 与双语 README 补充说明
+- test/github.test.js 新增 3 个测试（错误 body 超时包装、成功 body 超时包装、非超时 body 错误不误包装）；test/cli.test.js 新增环境变量解析测试（有效值/未设置/非法值）
+- 真实环境端到端验证通过：① INSTALLERMARKER_TIMEOUT_MS=120000 下对 expressjs/express 完成真实 inspect，生成钉死 commit SHA 与 license 证据的规范 recipe；② 真实执行 npm install && npm run dist 完成 package 打包，manifest 中 SHA-256 与独立 shasum 计算结果一致，产物符合 package-manifest schema
+- 回归验证：语法检查通过、177 个单元测试全部通过
+
+2026-08-17 目标推进：可靠性第四轮改进（materialize 真实下载验证 + 下载超时修复）
+
+- 真实 materialize 全链路实测（目标仓库 exelban/stats v3.0.11，单一 Stats.dmg 7.5MB，GitHub API 原生 sha256 digest）：inspect 生成钉死 commit 的 recipe（macOS available/reuse-installer）→ validate 通过（readyForMaterialize=true，errors 与 review warnings 正确分离）→ materialize 真实下载 → verify 离线复核通过 → sbom 组件清单带 provenance → smoke-plan 生成 plan-only 冒烟清单；manifest 哈希与独立 shasum 计算结果完全一致
+- 实测发现第二个同类可靠性 bug：慢网络（实测仅约 5.7KB/s）下 10 分钟固定下载超时必然失败，且响应头已到达、body 流式读取超时的错误从 pipeline 直接抛出原生 TimeoutError（位于 requestAsset 的 try/catch 之外），用户无计可施。修复了 src/materialize.js：新增 isAbortLikeError 遍历 cause 链识别超时，requestAsset 抛错时与 pipeline 流式读取失败时统一转换为"Download of X timed out after Nms. Raise INSTALLERMARKER_DOWNLOAD_TIMEOUT_MS on slow networks."的可操作提示；请求阶段超时不再无意义重试
+- 新增 INSTALLERMARKER_DOWNLOAD_TIMEOUT_MS 环境变量：src/cli.js 解析（仅 materialize 命令，非法值立即报错）、materializeRecipe 新增 downloadTimeoutMs 选项（正整数校验）、bin/installermarker.js 传入，usage 与双语 README 补充说明
+- test/materialize.test.js 新增 3 个测试（body 流式超时包装、请求超时不重试、自定义超时值）；test/cli.test.js 新增下载超时环境变量解析测试
+- 真实修复验证：INSTALLERMARKER_DOWNLOAD_TIMEOUT_MS=5000 时错误信息正确 actionable 且退出码 1；INSTALLERMARKER_DOWNLOAD_TIMEOUT_MS=1800000 时 7.5MB 真实下载在慢网络下成功完成并通过全部离线验证
+- 回归验证：语法检查通过、181 个单元测试全部通过
+
+2026-08-17 目标推进：build 路径验证准备（目标会话第五轮）
+
+- 为 build 源码构建路径准备真实验证：选定 jd/tenacity（MIT、纯 Python 库）作为目标仓库，用 git ls-remote 获取真实 commit 26f719dc，编写 python-native 策略 recipe（构建命令产出 .pkg 安装包），validate 确认 readyForBuild=true
+- 验证了 validate 的语义约束按设计工作：build-native packaging 要求 strategy 必须是 go-native/rust-native/python-native（node 策略被正确拒绝）；build-electron 要求 electron 策略（node 被正确拒绝）；recipe schema 对 packaging 枚举值的错误即时报错
+- 真实 build 执行（clone + 构建）在用户侧被跳过，build 路径的端到端真实验证留待后续；本机工具链限制已确认（无 go/cargo，有 python3/pkgbuild/zip）
+- 临时目录已清理；回归验证：语法检查通过、181 个单元测试全部通过
+
+2026-08-17 目标推进：文档一致性收尾（目标会话第六轮）
+
+- docs/materialize.md 与 docs/materialize.zh-CN.md 补充下载超时说明：单个文件 600000 毫秒上限、INSTALLERMARKER_DOWNLOAD_TIMEOUT_MS 调整方式、超时失败不保留残缺文件（与第四轮实测行为一致）
+- CHANGELOG.md Unreleased 补记 CI 测试矩阵扩展至 Node 24 与双 README CI 徽章两条基础设施变更（对齐项目既有惯例）
+- 回归验证：语法检查通过、181 个单元测试全部通过
+
+2026-08-17 目标推进：inspect 分类逻辑真实仓库验证（目标会话第七轮）
+
+- 用真实 Electron 应用 agalwood/Motrix（v1.8.19，三平台 release 资产）验证 inspect 的项目识别与多平台分类：strategy=electron、artifactDirectories=[dist,out]、suggestedPackager=electron-builder、suggestedCommand 均正确；.dmg/.deb 正确判定为 reuse-installer，.exe 正确判定为 wrap-release-asset（可复用安装包白名单不含 exe）
+- 真实数据验证 validate 门控与诊断精度：Motrix 未发布 digest，validate 报 valid=true 但 readyForMaterialize=false，digest-missing 警告精确定位到 /targets/1/input/digest 等具体 JSON 路径；license 未识别（NOASSERTION）正确生成再分发审核项；wrap-release-asset 目标正确报 materialization-unavailable
+- 真实 404 错误路径验证：不存在的仓库返回"GitHub API 404 for /repos/... "含文档链接，退出码 1
+- 本轮未发现缺陷（分类、门控、诊断三层行为均与文档一致）；临时目录已清理
+
+2026-08-17 目标推进：YAML recipe 全链路与 recipe-root 安全真实验证（目标会话第八轮）
+
+- YAML 格式真实往返验证：inspect --format yaml 对 exelban/stats 生成 YAML recipe（钉死 commit 39b5555f，上游 master 在第四轮之后有新提交，钉死机制正常；release 未变故 digest 一致）→ validate（readyForMaterialize=true）→ materialize --dry-run 输出正确下载计划与 skipped 记录，全链路通过
+- --recipe-root 安全约束双向真实验证：① 正向——符号链接解析后位于根内时正确放行（realpath 语义符合设计）；② 逃逸——根目录仅含指向外部的符号链接时正确拒绝（"Recipe path must be inside the configured recipe root"，退出码 1），与 src/recipe-file.js 的 realpath 包含检查实现一致
+- 本轮未发现缺陷；临时目录已清理；回归验证：181 个单元测试全部通过
+
+2026-08-18 目标推进：发布证据链真实全链路验证（目标会话第九轮）
+
+- 用真实物化的 Stats.dmg（exelban/stats v3.0.11，7.5MB）跑通完整发布证据链：
+  smoke-verify → scan-verify → sign-verify → release-verify → publish-plan → publish-verify → gate-verify
+- 7 个验证类命令全部通过，23 个检查点全部 passed（gate-verify 单步即含 23 项一致性检查）
+- 过程中发现并修正了外部结果文件的阶段名对齐问题（sign-result 阶段名需与 sign-plan 生成的实际阶段名一致，验证器正确拒绝不匹配结果）
+- 本轮未发现代码缺陷；临时目录已清理；回归验证：181 个单元测试全部通过

@@ -136,6 +136,68 @@ test("reports the installer name and network cause on download failure", async (
   }
 });
 
+test("wraps timeouts raised while streaming the response body", async () => {
+  // 模拟真实慢网络：响应头已到达，body 流式读取因超时中止
+  const payload = Buffer.from("verified installer payload");
+  const directory = await mkdtemp(join(tmpdir(), "installermarker-test-"));
+  try {
+    const timeout = new Error("The operation was aborted due to timeout");
+    timeout.name = "TimeoutError";
+    const body = new ReadableStream({
+      start(controller) {
+        controller.enqueue(new Uint8Array([104, 101, 108, 108, 111]));
+        setTimeout(() => controller.error(timeout), 10);
+      }
+    });
+    const response = new Response(body, { status: 200, headers: { "content-length": String(payload.length) } });
+    Object.defineProperty(response, "url", { value: "https://release-assets.githubusercontent.com/github-production-release-asset/widget" });
+    await assert.rejects(() => materializeRecipe(recipeFor(payload), {
+      outputDir: directory,
+      fetch: async () => response
+    }), /Download of widget-amd64\.msi timed out after 600000ms.*INSTALLERMARKER_DOWNLOAD_TIMEOUT_MS/);
+    assert.deepEqual(await readdir(directory), []);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("wraps timeouts raised before response headers arrive without retrying", async () => {
+  const payload = Buffer.from("verified installer payload");
+  const directory = await mkdtemp(join(tmpdir(), "installermarker-test-"));
+  try {
+    const timeout = new Error("The operation was aborted due to timeout");
+    timeout.name = "TimeoutError";
+    let attempts = 0;
+    await assert.rejects(() => materializeRecipe(recipeFor(payload), {
+      outputDir: directory,
+      networkRetries: 2,
+      fetch: async () => {
+        attempts += 1;
+        throw timeout;
+      }
+    }), /Download of widget-amd64\.msi timed out after 600000ms.*INSTALLERMARKER_DOWNLOAD_TIMEOUT_MS/);
+    assert.equal(attempts, 1);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test("accepts a custom download timeout", async () => {
+  const payload = Buffer.from("verified installer payload");
+  const directory = await mkdtemp(join(tmpdir(), "installermarker-test-"));
+  try {
+    const timeout = new Error("The operation was aborted due to timeout");
+    timeout.name = "TimeoutError";
+    await assert.rejects(() => materializeRecipe(recipeFor(payload), {
+      outputDir: directory,
+      downloadTimeoutMs: 30_000,
+      fetch: async () => { throw timeout; }
+    }), /timed out after 30000ms/);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
 test("retries a transient asset download failure before verification", async () => {
   const payload = Buffer.from("verified installer payload");
   const directory = await mkdtemp(join(tmpdir(), "installermarker-test-"));

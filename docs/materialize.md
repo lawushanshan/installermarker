@@ -20,6 +20,8 @@ installermarker materialize installermarker.json --target linux-x64 --output-dir
 
 The worker processes only targets whose packaging strategy is `reuse-installer`. Other targets are recorded as skipped. Pass `--target windows-x64`, `--target macos-universal`, or `--target linux-x64` to materialize just one reusable installer; omit it to process all reusable targets. Each selected asset must have a GitHub-published SHA-256 digest, be at most one GiB, use a platform-compatible installer extension, and originate from the source repository's public GitHub Releases. It retries transient connection failures, rate limits, and server errors up to two times before failing; every successful response still receives the same source, size, and SHA-256 checks. Private asset authentication is not supported yet.
 
+Each file download is bounded by a 600000 ms timeout. Slow networks can raise it with `INSTALLERMARKER_DOWNLOAD_TIMEOUT_MS`; a timed-out download fails with an actionable message and no partial files are kept.
+
 `validate` is the review gate: it checks the published JSON Schema and materialization policy without downloading files. The CLI accepts `.json`, `.yaml`, and `.yml` recipe files. `validate --strict` treats unresolved review warnings as failures, which is useful for repositories that require a fully resolved recipe before automation.
 
 The output directory contains the verified installers and `artifacts.json`. Existing files are never overwritten. The manifest includes the source repository, commit, and available SPDX license evidence, along with the target platform, filename, verified byte size and SHA-256, and original GitHub URL. Its contract is defined in `schema/artifact-manifest.schema.json`.

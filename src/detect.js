@@ -18,27 +18,47 @@ function architectureScore(name, targetId) {
   return 10;
 }
 
+function packagingScript(scripts, pattern) {
+  return Object.entries(scripts).find(([, command]) => typeof command === "string" && pattern.test(command))?.[0] ?? null;
+}
+
+function suggestedNpmBuildCommand(manifest, suggestedPackager) {
+  const scripts = manifest.scripts ?? {};
+  const packagerScript = suggestedPackager === "electron-builder"
+    ? packagingScript(scripts, /(?:^|\s)electron-builder(?:\s|$)/)
+    : suggestedPackager === "electron-forge"
+      ? packagingScript(scripts, /(?:^|\s)electron-forge(?:\s|$)/)
+      : null;
+  if (packagerScript) return `npm ci && npm run ${packagerScript}`;
+  return scripts.dist
+    ? "npm ci && npm run dist"
+    : scripts.make
+      ? "npm ci && npm run make"
+      : scripts.package
+        ? "npm ci && npm run package"
+        : scripts.build
+          ? "npm ci && npm run build"
+          : null;
+}
+
 function packageJsonDetails(content) {
   try {
     const manifest = JSON.parse(content);
     const dependencies = { ...manifest.dependencies, ...manifest.devDependencies };
     const names = Object.keys(dependencies);
-    const scripts = manifest.scripts ?? {};
-    const suggestedBuildCommand = scripts.dist
-      ? "npm ci && npm run dist"
-      : scripts.make
-        ? "npm ci && npm run make"
-        : scripts.package
-          ? "npm ci && npm run package"
-          : scripts.build
-            ? "npm ci && npm run build"
-            : null;
+    const suggestedPackager = names.includes("electron-builder")
+      ? "electron-builder"
+      : names.includes("@electron-forge/cli")
+        ? "electron-forge"
+        : null;
+    const suggestedBuildCommand = suggestedNpmBuildCommand(manifest, suggestedPackager);
     if (names.includes("electron") || names.includes("electron-builder") || names.includes("@electron-forge/cli")) {
       return {
         kind: "electron",
         strategy: "electron",
         evidence: "package.json declares Electron tooling",
         artifactDirectories: ["dist", "out"],
+        ...(suggestedPackager ? { suggestedPackager } : {}),
         suggestedBuildCommand
       };
     }
@@ -48,19 +68,72 @@ function packageJsonDetails(content) {
   }
 }
 
+function tauriPackagerHint(content) {
+  try {
+    const manifest = JSON.parse(content);
+    const dependencies = { ...manifest.dependencies, ...manifest.devDependencies };
+    const names = Object.keys(dependencies);
+    return names.includes("@tauri-apps/cli") ? "tauri-cli" : null;
+  } catch {
+    return null;
+  }
+}
+
+const PYTHON_PACKAGER_HINTS = [
+  {
+    pattern: /^\s*\[tool\.briefcase(?:\.|\])/m,
+    packager: "briefcase",
+    command: "python -m pip install briefcase && briefcase package"
+  },
+  {
+    pattern: /\bpyinstaller\b/,
+    packager: "pyinstaller",
+    command: "python -m pip install pyinstaller && pyinstaller TODO: confirm executable entrypoint"
+  },
+  {
+    pattern: /\bnuitka\b/,
+    packager: "nuitka",
+    command: "python -m pip install nuitka && python -m nuitka --standalone TODO: confirm executable entrypoint"
+  },
+  {
+    pattern: /\bcx[_-]?freeze\b/,
+    packager: "cx_Freeze",
+    command: "python -m pip install cx_Freeze && python setup.py build"
+  }
+];
+
+function pythonDetails(contents) {
+  const text = contents.join("\n").toLowerCase();
+  const base = {
+    kind: "python",
+    strategy: "python-native",
+    evidence: "Python project manifest found",
+    artifactDirectories: ["dist", "build"]
+  };
+  const hint = PYTHON_PACKAGER_HINTS.find(({ pattern }) => pattern.test(text));
+  if (hint) {
+    return {
+      ...base,
+      suggestedPackager: hint.packager,
+      suggestedBuildCommand: hint.command
+    };
+  }
+  return base;
+}
+
 export function detectProject(files) {
   const paths = new Set(files.map((file) => file.path));
   const file = (path) => files.find((item) => item.path === path);
   if (paths.has("src-tauri/tauri.conf.json") || paths.has("src-tauri/tauri.conf.json5")) {
-    const packageDetails = paths.has("package.json") ? packageJsonDetails(file("package.json")?.content ?? "") : null;
-    const suggestedBuildCommand = packageDetails?.suggestedBuildCommand?.includes("npm run build")
-      ? "npm ci && npm run build && npm run tauri -- build"
-      : "npm ci && npm run tauri -- build";
+    const packageJsonContent = file("package.json")?.content ?? "";
+    const suggestedPackager = paths.has("package.json") ? tauriPackagerHint(packageJsonContent) : null;
+    const suggestedBuildCommand = "npm ci && npm run tauri -- build";
     return {
       kind: "tauri",
       strategy: "tauri",
       evidence: "Tauri configuration found",
       artifactDirectories: ["src-tauri/target/release/bundle"],
+      ...(suggestedPackager ? { suggestedPackager } : {}),
       suggestedBuildCommand
     };
   }
@@ -68,12 +141,11 @@ export function detectProject(files) {
   if (paths.has("go.mod")) return { kind: "go", strategy: "go-native", evidence: "go.mod found" };
   if (paths.has("Cargo.toml")) return { kind: "rust", strategy: "rust-native", evidence: "Cargo.toml found" };
   if (paths.has("pyproject.toml") || paths.has("requirements.txt") || paths.has("setup.py")) {
-    return {
-      kind: "python",
-      strategy: "python-native",
-      evidence: "Python project manifest found",
-      artifactDirectories: ["dist", "build"]
-    };
+    return pythonDetails([
+      file("pyproject.toml")?.content ?? "",
+      file("requirements.txt")?.content ?? "",
+      file("setup.py")?.content ?? ""
+    ]);
   }
   if (paths.has("pom.xml") || paths.has("build.gradle") || paths.has("build.gradle.kts")) {
     return { kind: "java", strategy: "java-runtime", evidence: "Java build manifest found" };

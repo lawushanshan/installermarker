@@ -34,6 +34,7 @@
       "properties": {
         "strategy": { "type": "string", "minLength": 1 },
         "command": { "type": "string", "minLength": 1 },
+        "suggestedPackager": { "type": "string", "minLength": 1 },
         "suggestedCommand": { "type": "string", "minLength": 1 },
         "artifactDirectories": {
           "type": "array",

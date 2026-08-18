@@ -23,7 +23,7 @@ InstallerMarker 可以将经过审核的 Electron 和 Tauri 项目构建为原�
 
 执行 `installermarker validate recipe.json`，其中的源码构建状态必须为 `ready`。构建命令是安全边界，必须先针对该仓库和固定 commit 审核，不能直接把建议命令当作授权命令。
 
-使用 `build-native` 时，将 `build.strategy` 设为 `go-native`、`rust-native` 或 `python-native`，保留 `packaging: build-native`，并配置能在 `artifactDirectories` 中生成平台安装包的命令。Python 默认产物目录为 `dist` 和 `build`，但不会猜测入口或打包命令；审核人必须针对固定 commit 选择并审核 PyInstaller、Briefcase 或 Nuitka 等工具。Worker 刻意不替审核人选择打包器：Windows、macOS 和 Linux 的打包与签名要求不同。
+使用 `build-native` 时，将 `build.strategy` 设为 `go-native`、`rust-native` 或 `python-native`，保留 `packaging: build-native`，并配置能在 `artifactDirectories` 中生成平台安装包的命令。Electron/Tauri 在标准清单里识别到 Electron Builder、Electron Forge 或 Tauri CLI 时，可能会给出 `build.suggestedPackager` 和 `build.suggestedCommand`；Python 在识别到 Briefcase、PyInstaller、Nuitka 或 cx_Freeze 时也会这样做。入口和最终命令仍然需要人工审核，必须针对固定 commit 选择并审核。Worker 刻意不替审核人选择打包器：Windows、macOS 和 Linux 的打包与签名要求不同。
 
 ## 本地执行
 
@@ -37,7 +37,7 @@ installermarker build recipe.json \
   --allow-unsafe-local-build
 ```
 
-工作目录必须不存在。InstallerMarker 会在审核过的 commit 克隆公开 GitHub 源码，在克隆前禁用系统 Git 配置和 hooks，使用隔离的 home 和 npm 配置执行审核过的命令，只收集该平台对应的安装包、计算摘要并写入 `build-artifacts.json`。产物目录必须是检出目录内的真实目录，不能是符号链接；每个安装包最大为 1 GiB。它不会覆盖已有产物。检出目录会保留以便检查构建日志，确认结果后再删除。
+工作目录必须不存在。InstallerMarker 会在审核过的 commit 克隆公开 GitHub 源码，在克隆前禁用系统 Git 配置和 hooks，使用隔离的 home 和 npm 配置执行审核过的命令，只收集该平台对应的安装包、计算摘要并写入 `build-artifacts.json`。如果已审核的构建命令在配置的产物目录中输出了 SPDX 或 CycloneDX JSON 等常见 SBOM 文件名，Worker 会把这些文件复制到输出目录，并记录格式、源路径、大小和 SHA-256，作为构建 SBOM 证据；它不会自行生成或补全这些 SBOM 文档。清单会记录源、构建命令、产物哈希、可选的构建产出 SBOM 文档哈希、开始与结束时间、耗时，以及执行构建的 Node.js runner 平台和架构。产物目录必须是检出目录内的真实目录，不能是符号链接；每个安装包最大为 1 GiB，每个 SBOM 文档最大为 20 MiB。它不会覆盖已有产物。检出目录会保留以便检查构建日志，确认结果后再删除。
 
 ## GitHub Actions
 

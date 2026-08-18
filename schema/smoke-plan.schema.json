@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:installermarker:smoke-plan:1",
+  "title": "InstallerMarker smoke test plan",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "generatedAt", "source", "manifest", "execution", "tests"],
+  "properties": {
+    "schemaVersion": { "const": 1 },
+    "generatedAt": { "type": "string", "format": "date-time" },
+    "source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["repository", "commit"],
+      "properties": {
+        "repository": { "type": "string", "pattern": "^https://github\\.com/" },
+        "commit": { "type": "string", "pattern": "^[0-9a-f]{40}$" },
+        "license": { "type": "string", "minLength": 1 }
+      }
+    },
+    "manifest": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["name"],
+      "properties": {
+        "name": { "enum": ["artifacts.json", "build-artifacts.json"] },
+        "build": { "type": "object" },
+        "provenance": { "type": "object" }
+      }
+    },
+    "execution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["mode", "safety"],
+      "properties": {
+        "mode": { "const": "plan-only" },
+        "safety": { "type": "string", "minLength": 1 }
+      }
+    },
+    "tests": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["artifact", "installerType", "runOn", "steps", "notes"],
+        "properties": {
+          "artifact": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["platform", "name", "size", "sha256"],
+            "properties": {
+              "platform": { "enum": ["windows-x64", "macos-universal", "linux-x64"] },
+              "name": { "type": "string", "pattern": "^[^\\\\/]+$" },
+              "size": { "type": "integer", "minimum": 1 },
+              "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" }
+            }
+          },
+          "installerType": { "enum": ["msi", "exe", "dmg", "pkg", "appimage", "deb", "rpm"] },
+          "runOn": { "enum": ["windows-x64", "macos-universal", "linux-x64"] },
+          "steps": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": ["name", "mode", "description"],
+              "properties": {
+                "name": { "type": "string", "minLength": 1 },
+                "mode": { "const": "manual" },
+                "description": { "type": "string", "minLength": 1 }
+              }
+            }
+          },
+          "notes": {
+            "type": "array",
+            "items": { "type": "string" }
+          }
+        }
+      }
+    }
+  }
+}
