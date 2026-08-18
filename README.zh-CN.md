@@ -82,6 +82,14 @@ INSTALLERMARKER_TIMEOUT_MS=60000 installermarker https://github.com/owner/reposi
 
 `materialize` 下载安装包时也可以通过 `INSTALLERMARKER_DOWNLOAD_TIMEOUT_MS` 调高单个文件的下载超时（默认 600000 毫秒）。
 
+## 示例
+
+查看 [examples/](examples/) 目录获取详细使用示例：
+
+- [基础使用](examples/basic-usage.md) - 使用真实项目的完整工作流程
+- [CI 集成](examples/ci-integration.md) - GitHub Actions 自动化
+- [故障排除](examples/troubleshooting.md) - 常见问题及解决方案
+
 ## 本地源码打包
 
 本地打包器的主入口是 `package`。它只在当前机器上构建当前宿主平台，不负责跨平台模拟，也不会替项目发明打包命令：如果标准清单中能识别 Electron Builder、Electron Forge、Tauri CLI 或 Python 打包器，会给出常见命令；其他项目请显式传入 `--command`。

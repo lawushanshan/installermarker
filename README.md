@@ -82,6 +82,14 @@ INSTALLERMARKER_TIMEOUT_MS=60000 installermarker https://github.com/owner/reposi
 
 Slow networks can also raise the installer download timeout for `materialize` (default 600000 ms per file) with `INSTALLERMARKER_DOWNLOAD_TIMEOUT_MS`.
 
+## Examples
+
+See the [examples/](examples/) directory for comprehensive usage examples:
+
+- [Basic usage](examples/basic-usage.md) - Step-by-step workflow with a real project
+- [CI integration](examples/ci-integration.md) - GitHub Actions automation
+- [Troubleshooting](examples/troubleshooting.md) - Common issues and solutions
+
 ## Local source packaging
 
 The main local workflow is `package`. It builds for the current host only and uses the project's existing packaging command. Common commands are suggested when Electron Builder, Electron Forge, Tauri CLI, or a Python packager is named in the standard manifests; pass `--command` for other projects.
