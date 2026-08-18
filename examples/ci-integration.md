@@ -39,7 +39,9 @@ jobs:
           node-version: '22'
 
       - name: Install installermarker
-        run: npm install -g installermarker
+        run: |
+          # 从 GitHub Release 安装（npm 发布后可改为 npm install -g installermarker）
+          npm install -g https://github.com/lawushanshan/installermarker/releases/download/v0.2.8/installermarker-0.2.8.tgz
 
       - name: Determine repository
         id: repo
@@ -76,8 +78,7 @@ jobs:
         run: |
           mkdir -p artifacts
           installermarker materialize recipe.json \
-            --output-dir artifacts \
-            --format json > materialize-result.json
+            --output-dir artifacts
 
       - name: Verify artifacts
         run: |
