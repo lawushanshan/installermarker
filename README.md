@@ -1,5 +1,7 @@
 # InstallerMarker
 
+[![CI](https://github.com/lawushanshan/installermarker/actions/workflows/ci.yml/badge.svg)](https://github.com/lawushanshan/installermarker/actions/workflows/ci.yml)
+
 中文文档请见 [README.zh-CN.md](README.zh-CN.md)。
 
 InstallerMarker is a local source packager: it reads an open-source project directory, runs the project's packaging command, collects distributable files, and writes a SHA-256 backed `package-manifest.json`. GitHub analysis and release review workflows remain available, but they are not required for local packaging.
@@ -71,6 +73,14 @@ GITHUB_TOKEN=github_pat_xxx installermarker https://github.com/owner/repository 
 ```
 
 The token is used only for GitHub API requests during that invocation and is never written to disk.
+
+Slow networks can raise the GitHub API request timeout (default 15000 ms) with `INSTALLERMARKER_TIMEOUT_MS`:
+
+```bash
+INSTALLERMARKER_TIMEOUT_MS=60000 installermarker https://github.com/owner/repository --recipe
+```
+
+Slow networks can also raise the installer download timeout for `materialize` (default 600000 ms per file) with `INSTALLERMARKER_DOWNLOAD_TIMEOUT_MS`.
 
 ## Local source packaging
 

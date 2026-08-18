@@ -20,6 +20,10 @@ All notable changes to InstallerMarker are documented here. Versions follow Sema
 - Added a no-secret GitHub Actions workflow that runs `publish-verify` and uploads `publish-verification.json`.
 - Added structured source-build packager hints for Electron Builder, Electron Forge, Tauri CLI, Briefcase, PyInstaller, Nuitka, and cx_Freeze, with recipe propagation and documentation updates.
 - Added a local `package` command that selects packaging scripts and lockfile package managers, runs the build, collects common distributable files, and writes SHA-256 package manifests.
+- Added `schema/package-manifest.schema.json` describing the local `package` command's `package-manifest.json` output, with a schema-contract test.
+- Wrapped GitHub API response-body timeouts into an actionable message; slow networks can now raise the request timeout with `INSTALLERMARKER_TIMEOUT_MS`.
+- Wrapped materialization download timeouts into an actionable message; slow networks can now raise the per-file download timeout with `INSTALLERMARKER_DOWNLOAD_TIMEOUT_MS`.
+- Expanded the CI test matrix to Node 24 and added a CI status badge to both READMEs.
 - Centralized CLI command option policies to keep command growth explicit and reject ignored options consistently.
 - Shared artifact-manifest projection helpers across read-only plan commands.
 

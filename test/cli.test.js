@@ -10,6 +10,37 @@ test("parses a repository URL and output options", () => {
   assert.equal(options.format, "yaml");
 });
 
+test("reads the inspect timeout from the environment", () => {
+  const previous = process.env.INSTALLERMARKER_TIMEOUT_MS;
+  try {
+    process.env.INSTALLERMARKER_TIMEOUT_MS = "60000";
+    assert.equal(parseArguments(["https://github.com/acme/widget"]).timeoutMs, 60000);
+    delete process.env.INSTALLERMARKER_TIMEOUT_MS;
+    assert.equal(parseArguments(["https://github.com/acme/widget"]).timeoutMs, undefined);
+    process.env.INSTALLERMARKER_TIMEOUT_MS = "invalid";
+    assert.throws(() => parseArguments(["https://github.com/acme/widget"]), /INSTALLERMARKER_TIMEOUT_MS/);
+  } finally {
+    if (previous === undefined) delete process.env.INSTALLERMARKER_TIMEOUT_MS;
+    else process.env.INSTALLERMARKER_TIMEOUT_MS = previous;
+  }
+});
+
+test("reads the materialize download timeout from the environment", () => {
+  const previous = process.env.INSTALLERMARKER_DOWNLOAD_TIMEOUT_MS;
+  try {
+    process.env.INSTALLERMARKER_DOWNLOAD_TIMEOUT_MS = "1800000";
+    assert.equal(parseArguments(["materialize", "recipe.json", "--output-dir", "out"]).downloadTimeoutMs, 1800000);
+    delete process.env.INSTALLERMARKER_DOWNLOAD_TIMEOUT_MS;
+    assert.equal(parseArguments(["materialize", "recipe.json", "--output-dir", "out"]).downloadTimeoutMs, undefined);
+    assert.equal(parseArguments(["https://github.com/acme/widget"]).downloadTimeoutMs, undefined);
+    process.env.INSTALLERMARKER_DOWNLOAD_TIMEOUT_MS = "-5";
+    assert.throws(() => parseArguments(["materialize", "recipe.json", "--output-dir", "out"]), /INSTALLERMARKER_DOWNLOAD_TIMEOUT_MS/);
+  } finally {
+    if (previous === undefined) delete process.env.INSTALLERMARKER_DOWNLOAD_TIMEOUT_MS;
+    else process.env.INSTALLERMARKER_DOWNLOAD_TIMEOUT_MS = previous;
+  }
+});
+
 test("accepts SSH GitHub URLs", () => {
   assert.deepEqual(parseGitHubUrl("git@github.com:acme/widget.git"), { owner: "acme", repository: "widget" });
 });

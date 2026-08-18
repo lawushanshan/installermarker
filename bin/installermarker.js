@@ -193,14 +193,15 @@ async function main() {
         console.log(JSON.stringify(createMaterializationPlan(recipe), null, 2));
         return;
       }
-      const manifest = await materializeRecipe(recipe, { fetch: globalThis.fetch, outputDir: options.outputDir, targetPlatform: options.targetPlatform });
+      const manifest = await materializeRecipe(recipe, { fetch: globalThis.fetch, outputDir: options.outputDir, targetPlatform: options.targetPlatform, downloadTimeoutMs: options.downloadTimeoutMs });
       console.log(`Materialized ${manifest.artifacts.length} verified installer(s) in ${options.outputDir}`);
       return;
     }
 
     const report = await analyzeRepository(options.url, {
       token: options.token,
-      fetch: globalThis.fetch
+      fetch: globalThis.fetch,
+      timeoutMs: options.timeoutMs
     });
     const output = options.recipe ? formatRecipe(report, options.format) : formatReport(report, options.format);
     if (options.output) {

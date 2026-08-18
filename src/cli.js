@@ -133,6 +133,22 @@ const COMMAND_SPECS = {
 
 const COMMANDS = new Set(Object.keys(COMMAND_SPECS));
 
+// 解析可选的 GitHub API 超时环境变量；空值表示未设置，非法值立即报错
+function readTimeoutMs(value) {
+  if (value === undefined || value === "") return undefined;
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed <= 0) throw new Error("INSTALLERMARKER_TIMEOUT_MS must be a positive integer of milliseconds.");
+  return parsed;
+}
+
+// 解析可选的安装包下载超时环境变量；校验规则与 API 超时一致
+function readDownloadTimeoutMs(value) {
+  if (value === undefined || value === "") return undefined;
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed <= 0) throw new Error("INSTALLERMARKER_DOWNLOAD_TIMEOUT_MS must be a positive integer of milliseconds.");
+  return parsed;
+}
+
 function optionIsSet(options, field) {
   return typeof options[field] === "boolean" ? options[field] : options[field] !== undefined;
 }
@@ -168,7 +184,9 @@ export function parseArguments(argumentsList) {
     dryRun: false,
     strict: false,
     allowUnsafeLocalBuild: false,
-    token: command === "inspect" ? process.env.GITHUB_TOKEN : undefined
+    token: command === "inspect" ? process.env.GITHUB_TOKEN : undefined,
+    timeoutMs: command === "inspect" ? readTimeoutMs(process.env.INSTALLERMARKER_TIMEOUT_MS) : undefined,
+    downloadTimeoutMs: command === "materialize" ? readDownloadTimeoutMs(process.env.INSTALLERMARKER_DOWNLOAD_TIMEOUT_MS) : undefined
   };
 
   const valueAfter = (index, option) => {
@@ -279,12 +297,14 @@ Inspect options:
   -o, --output <file>  Write output to a file; refuses to overwrite by default
   --force              Allow --output to overwrite an existing file
   --token <token>      GitHub token, or use GITHUB_TOKEN
+  INSTALLERMARKER_TIMEOUT_MS  Raise the GitHub API request timeout (default: 15000)
 
 Materialize options:
   --output-dir <dir>   Directory for verified installers and artifacts.json
   --target <platform>  Materialize only windows-x64, macos-universal, or linux-x64
   --dry-run            Validate and print the download plan without writing
   --recipe-root <dir>  Require the recipe file to be inside this directory
+  INSTALLERMARKER_DOWNLOAD_TIMEOUT_MS  Raise the installer download timeout (default: 600000)
 
 Build options:
   --target <platform>  windows-x64, macos-universal, or linux-x64

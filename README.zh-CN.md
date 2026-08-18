@@ -1,5 +1,7 @@
 # InstallerMarker
 
+[![CI](https://github.com/lawushanshan/installermarker/actions/workflows/ci.yml/badge.svg)](https://github.com/lawushanshan/installermarker/actions/workflows/ci.yml)
+
 [English](README.md)
 
 InstallerMarker 是一个本地源码打包器：读取开源项目目录，执行项目已有的打包命令，收集可分发文件，并输出带 SHA-256 的 `package-manifest.json`。GitHub 分析和审核流程仍然保留，但不是本地打包的必经步骤。
@@ -71,6 +73,14 @@ GITHUB_TOKEN=github_pat_xxx installermarker https://github.com/owner/repository 
 ```
 
 令牌只用于本次执行中的 GitHub API 请求，不会写入磁盘。
+
+慢速网络可以通过 `INSTALLERMARKER_TIMEOUT_MS` 调高 GitHub API 请求超时（默认 15000 毫秒）：
+
+```bash
+INSTALLERMARKER_TIMEOUT_MS=60000 installermarker https://github.com/owner/repository --recipe
+```
+
+`materialize` 下载安装包时也可以通过 `INSTALLERMARKER_DOWNLOAD_TIMEOUT_MS` 调高单个文件的下载超时（默认 600000 毫秒）。
 
 ## 本地源码打包
 

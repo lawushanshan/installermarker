@@ -8,9 +8,9 @@ const INTERESTING_FILES = new Set([
   "src-tauri/tauri.conf.json", "src-tauri/tauri.conf.json5"
 ]);
 
-export async function analyzeRepository(url, { fetch, token } = {}) {
+export async function analyzeRepository(url, { fetch, token, timeoutMs } = {}) {
   const { owner, repository } = parseGitHubUrl(url);
-  const github = createGitHubClient(fetch, token);
+  const github = createGitHubClient(fetch, token, { timeoutMs });
   const metadata = await github.repository(owner, repository);
   const [commit, release] = await Promise.all([
     github.commit(owner, repository, metadata.default_branch),

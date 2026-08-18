@@ -8,6 +8,21 @@ import { createMaterializationPlan } from "./validate.js";
 
 const DEFAULT_MAX_BYTES = 1024 * 1024 * 1024;
 const DEFAULT_NETWORK_RETRIES = 2;
+const DEFAULT_DOWNLOAD_TIMEOUT_MS = 10 * 60_000;
+
+// 识别中止/超时形态的错误（含包装在 cause 链中的）
+function isAbortLikeError(error) {
+  let current = error;
+  while (current) {
+    if (current.name === "TimeoutError" || current.name === "AbortError") return true;
+    current = current.cause;
+  }
+  return false;
+}
+
+function downloadTimeoutMessage(item, downloadTimeoutMs) {
+  return new Error(`Download of ${item.name} timed out after ${downloadTimeoutMs}ms. Raise INSTALLERMARKER_DOWNLOAD_TIMEOUT_MS on slow networks.`);
+}
 
 function validateRedirectUrl(responseUrl) {
   const url = new URL(responseUrl);
@@ -34,14 +49,15 @@ function waitForRetry(attempt) {
   return new Promise((resolvePromise) => setTimeout(resolvePromise, 250 * (attempt + 1)));
 }
 
-async function requestAsset(item, fetchImplementation, networkRetries) {
+async function requestAsset(item, fetchImplementation, networkRetries, downloadTimeoutMs) {
   let requestError;
   for (let attempt = 0; attempt <= networkRetries; attempt += 1) {
     let response;
     try {
-      response = await fetchImplementation(item.url, { redirect: "follow", signal: AbortSignal.timeout(10 * 60_000) });
+      response = await fetchImplementation(item.url, { redirect: "follow", signal: AbortSignal.timeout(downloadTimeoutMs) });
     } catch (error) {
       requestError = error;
+      if (isAbortLikeError(error)) throw downloadTimeoutMessage(item, downloadTimeoutMs);
       if (attempt === networkRetries) break;
       await waitForRetry(attempt);
       continue;
@@ -55,8 +71,8 @@ async function requestAsset(item, fetchImplementation, networkRetries) {
   throw new Error(`Download request failed for ${item.name} after ${networkRetries + 1} attempts: ${reason}`);
 }
 
-async function downloadAndVerify(item, destination, fetchImplementation, maxBytes, networkRetries) {
-  const response = await requestAsset(item, fetchImplementation, networkRetries);
+async function downloadAndVerify(item, destination, fetchImplementation, maxBytes, networkRetries, downloadTimeoutMs) {
+  const response = await requestAsset(item, fetchImplementation, networkRetries, downloadTimeoutMs);
   validateRedirectUrl(response.url || item.url);
   const declaredLength = Number(response.headers.get("content-length"));
   if (Number.isFinite(declaredLength) && declaredLength > maxBytes) throw new Error(`Download exceeds the ${maxBytes}-byte limit: ${item.name}`);
@@ -74,7 +90,13 @@ async function downloadAndVerify(item, destination, fetchImplementation, maxByte
       callback(null, chunk);
     }
   });
-  await pipeline(Readable.fromWeb(response.body), observer, createWriteStream(destination, { flags: "wx" }));
+  try {
+    await pipeline(Readable.fromWeb(response.body), observer, createWriteStream(destination, { flags: "wx" }));
+  } catch (error) {
+    // 响应头已到达但 body 流式读取仍可能因超时中止，需转换为可操作的提示
+    if (isAbortLikeError(error)) throw downloadTimeoutMessage(item, downloadTimeoutMs);
+    throw error;
+  }
 
   const actualSha256 = hash.digest("hex");
   if (actualSize !== item.expectedSize) throw new Error(`Size mismatch for ${item.name}: expected ${item.expectedSize}, received ${actualSize}.`);
@@ -82,10 +104,11 @@ async function downloadAndVerify(item, destination, fetchImplementation, maxByte
   return { ...item, size: actualSize, sha256: actualSha256 };
 }
 
-export async function materializeRecipe(recipe, { fetch, outputDir, targetPlatform, maxBytes = DEFAULT_MAX_BYTES, networkRetries = DEFAULT_NETWORK_RETRIES } = {}) {
+export async function materializeRecipe(recipe, { fetch, outputDir, targetPlatform, maxBytes = DEFAULT_MAX_BYTES, networkRetries = DEFAULT_NETWORK_RETRIES, downloadTimeoutMs = DEFAULT_DOWNLOAD_TIMEOUT_MS } = {}) {
   if (typeof fetch !== "function") throw new Error("A fetch implementation is required.");
   if (!outputDir) throw new Error("An output directory is required.");
   if (!Number.isInteger(networkRetries) || networkRetries < 0 || networkRetries > 5) throw new Error("networkRetries must be an integer between 0 and 5.");
+  if (!Number.isInteger(downloadTimeoutMs) || downloadTimeoutMs <= 0) throw new Error("downloadTimeoutMs must be a positive integer of milliseconds.");
   const plan = createMaterializationPlan(recipe, { maxBytes, targetPlatform });
   const destination = resolve(outputDir);
   await mkdir(destination, { recursive: true });
@@ -102,7 +125,7 @@ export async function materializeRecipe(recipe, { fetch, outputDir, targetPlatfo
   try {
     const verified = [];
     for (const item of plan.downloads) {
-      verified.push(await downloadAndVerify(item, join(staging, item.name), fetch, maxBytes, networkRetries));
+      verified.push(await downloadAndVerify(item, join(staging, item.name), fetch, maxBytes, networkRetries, downloadTimeoutMs));
     }
 
     for (const item of verified) {
